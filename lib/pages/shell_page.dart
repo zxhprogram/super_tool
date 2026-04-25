@@ -52,6 +52,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('配置格式化'),
               child: const Icon(Icons.code),
             ),
+            NavigationItem(
+              key: const ValueKey('/bookmarks'),
+              label: const Text('书签管理'),
+              child: const Icon(Icons.bookmarks),
+            ),
           ],
         ),
         Expanded(child: child),

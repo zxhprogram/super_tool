@@ -46,6 +46,13 @@ class WelcomePage extends StatelessWidget {
                 description: 'JSON / YAML 格式化',
                 onTap: () => context.go('/formatter'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.bookmarks,
+                title: '书签管理',
+                description: '网页书签收藏管理',
+                onTap: () => context.go('/bookmarks'),
+              ),
             ],
           ),
         ],

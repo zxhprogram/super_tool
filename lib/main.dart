@@ -1,7 +1,10 @@
 import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'router.dart';
 
 void main() {
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
   runApp(const MyApp());
 }
 
@@ -15,6 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorSchemes.darkZinc,
         radius: 0.5,
+        typography: .geist(sans: .new(fontFamily: 'Microsoft YaHei')),
       ),
       routerConfig: router,
     );

@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'pages/welcome_page.dart';
 import 'pages/key_listener_page.dart';
 import 'pages/formatter_page.dart';
+import 'pages/bookmark_page.dart';
 import 'pages/shell_page.dart';
 
 final router = GoRouter(
@@ -21,6 +22,10 @@ final router = GoRouter(
         GoRoute(
           path: '/formatter',
           builder: (context, state) => const FormatterPage(),
+        ),
+        GoRoute(
+          path: '/bookmarks',
+          builder: (context, state) => const BookmarkPage(),
         ),
       ],
     ),
