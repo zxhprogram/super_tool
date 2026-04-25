@@ -93,17 +93,11 @@ func StartKeyListener() {
 				if !ok {
 					return
 				}
-				var action string
-				switch ev.Kind {
-				case hook.KeyDown, hook.KeyHold:
-					action = "down"
-				case hook.KeyUp:
-					action = "up"
-				default:
+				if ev.Kind != hook.KeyUp {
 					continue
 				}
 				name := resolveKeyName(ev.Rawcode, rune(ev.Keychar))
-				entry := action + ":" + name
+				entry := "up:" + name
 
 				mu.Lock()
 				cb := keyCb
