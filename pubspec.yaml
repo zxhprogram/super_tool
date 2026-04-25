@@ -34,6 +34,8 @@ dependencies:
   shadcn_flutter: ^0.0.52
   go_router: ^17.2.2
   signals_flutter: ^6.3.0
+  re_editor: ^0.8.0
+  re_highlight: ^0.0.3
 
 dev_dependencies:
   flutter_test:

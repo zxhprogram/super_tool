@@ -47,6 +47,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('按键监听'),
               child: const Icon(Icons.keyboard),
             ),
+            NavigationItem(
+              key: const ValueKey('/formatter'),
+              label: const Text('配置格式化'),
+              child: const Icon(Icons.code),
+            ),
           ],
         ),
         Expanded(child: child),

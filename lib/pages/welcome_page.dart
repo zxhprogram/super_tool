@@ -39,6 +39,13 @@ class WelcomePage extends StatelessWidget {
                 description: '全局按键事件捕获',
                 onTap: () => context.go('/key-listener'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.code,
+                title: '配置格式化',
+                description: 'JSON / YAML 格式化',
+                onTap: () => context.go('/formatter'),
+              ),
             ],
           ),
         ],
