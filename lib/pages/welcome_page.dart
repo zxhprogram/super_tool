@@ -60,6 +60,13 @@ class WelcomePage extends StatelessWidget {
                 description: '实时网速与流量统计',
                 onTap: () => context.go('/network'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.trending_up,
+                title: 'GitHub 趋势',
+                description: '仓库与开发者热度榜',
+                onTap: () => context.go('/github-trending'),
+              ),
             ],
           ),
         ],

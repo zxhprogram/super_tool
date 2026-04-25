@@ -4,6 +4,7 @@ import 'pages/key_listener_page.dart';
 import 'pages/formatter_page.dart';
 import 'pages/bookmark_page.dart';
 import 'pages/network_page.dart';
+import 'pages/github_trending_page.dart';
 import 'pages/shell_page.dart';
 
 final router = GoRouter(
@@ -12,26 +13,12 @@ final router = GoRouter(
     ShellRoute(
       builder: (context, state, child) => ShellPage(child: child),
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const WelcomePage(),
-        ),
-        GoRoute(
-          path: '/key-listener',
-          builder: (context, state) => const KeyListenerPage(),
-        ),
-        GoRoute(
-          path: '/formatter',
-          builder: (context, state) => const FormatterPage(),
-        ),
-        GoRoute(
-          path: '/bookmarks',
-          builder: (context, state) => const BookmarkPage(),
-        ),
-        GoRoute(
-          path: '/network',
-          builder: (context, state) => const NetworkPage(),
-        ),
+        GoRoute(path: '/', builder: (context, state) => const WelcomePage()),
+        GoRoute(path: '/key-listener', builder: (context, state) => const KeyListenerPage()),
+        GoRoute(path: '/formatter', builder: (context, state) => const FormatterPage()),
+        GoRoute(path: '/bookmarks', builder: (context, state) => const BookmarkPage()),
+        GoRoute(path: '/network', builder: (context, state) => const NetworkPage()),
+        GoRoute(path: '/github-trending', builder: (context, state) => const GitHubTrendingPage()),
       ],
     ),
   ],

@@ -12,11 +12,13 @@ class NetworkBindings {
   late final _FreeStringDart _freeString;
 
   NetworkBindings() {
-    final dylib = DynamicLibrary.open('super_tool_plugin.dll');
-    _getNetStats = dylib
-        .lookupFunction<_GetNetStatsNative, _GetNetStatsDart>('GetNetStats');
-    _freeString = dylib
-        .lookupFunction<_FreeStringNative, _FreeStringDart>('FreeString');
+    final dylib = DynamicLibrary.open('assets/dylib/super_tool_plugin.dll');
+    _getNetStats = dylib.lookupFunction<_GetNetStatsNative, _GetNetStatsDart>(
+      'GetNetStats',
+    );
+    _freeString = dylib.lookupFunction<_FreeStringNative, _FreeStringDart>(
+      'FreeString',
+    );
   }
 
   String getNetStats() {

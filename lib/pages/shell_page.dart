@@ -62,6 +62,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('网络监控'),
               child: const Icon(Icons.network_check),
             ),
+            NavigationItem(
+              key: const ValueKey('/github-trending'),
+              label: const Text('GitHub 趋势'),
+              child: const Icon(Icons.trending_up),
+            ),
           ],
         ),
         Expanded(child: child),
