@@ -1,10 +1,12 @@
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'ffi/network_service.dart';
 import 'router.dart';
 
 void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
+  networkService.start();
   runApp(const MyApp());
 }
 

@@ -53,6 +53,13 @@ class WelcomePage extends StatelessWidget {
                 description: '网页书签收藏管理',
                 onTap: () => context.go('/bookmarks'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.network_check,
+                title: '网络监控',
+                description: '实时网速与流量统计',
+                onTap: () => context.go('/network'),
+              ),
             ],
           ),
         ],

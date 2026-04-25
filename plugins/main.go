@@ -12,10 +12,12 @@ static inline void bridge_key_callback(KeyCallback cb, const char* event) {
 import "C"
 
 import (
+	"encoding/json"
 	"sync"
 	"unsafe"
 
 	hook "github.com/robotn/gohook"
+	psnet "github.com/shirou/gopsutil/v3/net"
 )
 
 var (
@@ -127,6 +129,23 @@ func StopKeyListener() {
 //export FreeString
 func FreeString(s *C.char) {
 	C.free(unsafe.Pointer(s))
+}
+
+//export GetNetStats
+func GetNetStats() *C.char {
+	stats, err := psnet.IOCounters(false)
+	if err != nil || len(stats) == 0 {
+		return C.CString(`{"bytes_sent":0,"bytes_recv":0}`)
+	}
+	type payload struct {
+		BytesSent uint64 `json:"bytes_sent"`
+		BytesRecv uint64 `json:"bytes_recv"`
+	}
+	data, err := json.Marshal(payload{BytesSent: stats[0].BytesSent, BytesRecv: stats[0].BytesRecv})
+	if err != nil {
+		return C.CString(`{"bytes_sent":0,"bytes_recv":0}`)
+	}
+	return C.CString(string(data))
 }
 
 func main() {}

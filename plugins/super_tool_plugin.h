@@ -97,6 +97,7 @@ extern __declspec(dllexport) void RegisterKeyCallback(KeyCallback cb);
 extern __declspec(dllexport) void StartKeyListener(void);
 extern __declspec(dllexport) void StopKeyListener(void);
 extern __declspec(dllexport) void FreeString(char* s);
+extern __declspec(dllexport) char* GetNetStats(void);
 
 #ifdef __cplusplus
 }

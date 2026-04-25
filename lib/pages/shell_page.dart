@@ -57,6 +57,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('书签管理'),
               child: const Icon(Icons.bookmarks),
             ),
+            NavigationItem(
+              key: const ValueKey('/network'),
+              label: const Text('网络监控'),
+              child: const Icon(Icons.network_check),
+            ),
           ],
         ),
         Expanded(child: child),
