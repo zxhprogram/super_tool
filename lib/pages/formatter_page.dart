@@ -61,6 +61,43 @@ class _FormatterPageState extends State<FormatterPage> {
     return buffer.toString().trimRight();
   }
 
+  void _compress() {
+    final text = _controller.text;
+    if (text.trim().isEmpty) return;
+
+    setState(() => _error = null);
+
+    try {
+      final decoded = jsonDecode(text);
+      _controller.text = jsonEncode(decoded);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+  }
+
+  void _escape() {
+    final text = _controller.text;
+    if (text.trim().isEmpty) return;
+    setState(() => _error = null);
+    _controller.text = jsonEncode(text);
+  }
+
+  void _unescape() {
+    final text = _controller.text;
+    if (text.trim().isEmpty) return;
+    setState(() => _error = null);
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is String) {
+        _controller.text = decoded;
+      } else {
+        setState(() => _error = '内容不是一个转义后的字符串');
+      }
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+  }
+
   void _clear() {
     _controller.text = '';
     setState(() => _error = null);
@@ -126,6 +163,26 @@ class _FormatterPageState extends State<FormatterPage> {
                 leading: const Icon(Icons.auto_fix_high),
                 child: const Text('格式化'),
               ),
+              if (_formatType == FormatType.json) ...[
+                const Gap(8),
+                SecondaryButton(
+                  onPressed: _compress,
+                  leading: const Icon(Icons.compress),
+                  child: const Text('压缩'),
+                ),
+                const Gap(8),
+                SecondaryButton(
+                  onPressed: _escape,
+                  leading: const Icon(Icons.text_increase),
+                  child: const Text('转义'),
+                ),
+                const Gap(8),
+                SecondaryButton(
+                  onPressed: _unescape,
+                  leading: const Icon(Icons.text_decrease),
+                  child: const Text('去转义'),
+                ),
+              ],
               const Gap(8),
               SecondaryButton(
                 onPressed: _clear,
