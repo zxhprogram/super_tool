@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_sortable_wrap/flutter_sortable_wrap.dart';
 import '../db/database_helper.dart';
 import '../db/bookmark_model.dart';
 import 'bookmark_dialogs.dart';
@@ -114,6 +115,14 @@ class _BookmarkPageState extends State<BookmarkPage> {
       await _db.deleteBookmark(bm.id!);
       await _loadBookmarks();
     }
+  }
+
+  void _reorderBookmarks(int oldIndex, int newIndex) {
+    final updated = List<Bookmark>.from(_bookmarks);
+    final item = updated.removeAt(oldIndex);
+    updated.insert(newIndex, item);
+    setState(() => _bookmarks = updated);
+    _db.updateBookmarkOrders(updated);
   }
 
   @override
@@ -245,17 +254,27 @@ class _BookmarkPageState extends State<BookmarkPage> {
                             color: theme.colorScheme.mutedForeground)),
                   )
                 : SingleChildScrollView(
-                    child: Wrap(
+                    child: SortableWrap(
                       spacing: 12,
                       runSpacing: 12,
+                      onSorted: (oldIndex, newIndex) {
+                        if (oldIndex >= _bookmarks.length ||
+                            newIndex >= _bookmarks.length) {
+                          return;
+                        }
+                        _reorderBookmarks(oldIndex, newIndex);
+                      },
                       children: [
                         ..._bookmarks.map((bm) => _BookmarkCard(
+                              key: ValueKey(bm.id),
                               bookmark: bm,
-                              onTap: () =>
-                                  launchUrl(Uri.parse(bm.url)),
+                              onTap: () => launchUrl(Uri.parse(bm.url)),
                               onLongPress: () => _deleteBookmark(bm),
                             )),
-                        _AddBookmarkCard(onTap: _addBookmark),
+                        _AddBookmarkCard(
+                          key: const ValueKey('add'),
+                          onTap: _addBookmark,
+                        ),
                       ],
                     ),
                   ),
@@ -272,6 +291,7 @@ class _BookmarkCard extends StatelessWidget {
   final VoidCallback onLongPress;
 
   const _BookmarkCard({
+    super.key,
     required this.bookmark,
     required this.onTap,
     required this.onLongPress,
@@ -324,7 +344,7 @@ class _BookmarkCard extends StatelessWidget {
 
 class _AddBookmarkCard extends StatelessWidget {
   final VoidCallback onTap;
-  const _AddBookmarkCard({required this.onTap});
+  const _AddBookmarkCard({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

@@ -155,6 +155,20 @@ class DatabaseHelper {
     await d.delete('bookmarks', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<void> updateBookmarkOrders(List<Bookmark> bookmarks) async {
+    final d = await db;
+    final batch = d.batch();
+    for (int i = 0; i < bookmarks.length; i++) {
+      batch.update(
+        'bookmarks',
+        {'sort_order': i},
+        where: 'id = ?',
+        whereArgs: [bookmarks[i].id],
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   // --- Network stats ---
 
   Future<void> insertNetMinuteStat({
