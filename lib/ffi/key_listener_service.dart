@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
+import '../db/database_helper.dart';
 import 'key_listener_bindings.dart';
+
+final keyListenerService = KeyListenerService();
 
 class KeyListenerService {
   final KeyListenerBindings _bindings;
@@ -9,10 +12,15 @@ class KeyListenerService {
   NativeCallable<Void Function(Pointer<Utf8>)>? _nativeCallable;
   bool _listening = false;
 
+  int _sessionCount = 0;
+  int _minuteBucketCount = 0;
+  int? _currentMinuteTs;
+
   KeyListenerService() : _bindings = KeyListenerBindings();
 
   Stream<String> get keyEvents => _controller.stream;
   bool get isListening => _listening;
+  int get sessionCount => _sessionCount;
 
   void start() {
     if (_listening) return;
@@ -39,6 +47,26 @@ class KeyListenerService {
     final event = eventPtr.toDartString();
     _bindings.freeString(eventPtr);
     _controller.add(event);
+    _accumulateMinute();
+  }
+
+  void _accumulateMinute() {
+    _sessionCount++;
+    final nowMinuteTs =
+        (DateTime.now().millisecondsSinceEpoch ~/ 1000) ~/ 60 * 60;
+    _currentMinuteTs ??= nowMinuteTs;
+
+    if (nowMinuteTs == _currentMinuteTs) {
+      _minuteBucketCount++;
+    } else {
+      _persistMinute(_currentMinuteTs!, _minuteBucketCount);
+      _currentMinuteTs = nowMinuteTs;
+      _minuteBucketCount = 1;
+    }
+  }
+
+  void _persistMinute(int ts, int count) {
+    DatabaseHelper().insertKeyMinuteStat(minuteTs: ts, keyCount: count);
   }
 
   void dispose() {

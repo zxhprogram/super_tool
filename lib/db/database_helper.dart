@@ -1,5 +1,6 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'bookmark_model.dart';
+import 'key_model.dart';
 import 'network_model.dart';
 
 class DatabaseHelper {
@@ -19,7 +20,7 @@ class DatabaseHelper {
     final path = '$dbPath/super_tool.db';
     return openDatabase(
       path,
-      version: 2,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE bookmark_groups (
@@ -47,6 +48,19 @@ class DatabaseHelper {
             bytes_recv INTEGER NOT NULL DEFAULT 0
           )
         ''');
+        await db.execute('''
+          CREATE TABLE key_minute_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            minute_ts INTEGER NOT NULL UNIQUE,
+            key_count INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -59,9 +73,47 @@ class DatabaseHelper {
             )
           ''');
         }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS key_minute_stats (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              minute_ts INTEGER NOT NULL UNIQUE,
+              key_count INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+        }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS settings (
+              key TEXT PRIMARY KEY,
+              value TEXT NOT NULL
+            )
+          ''');
+        }
       },
     );
   }
+
+  // --- Settings ---
+
+  Future<String?> getSetting(String key) async {
+    final d = await db;
+    final rows =
+        await d.query('settings', where: 'key = ?', whereArgs: [key]);
+    if (rows.isEmpty) return null;
+    return rows.first['value'] as String?;
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    final d = await db;
+    await d.insert(
+      'settings',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // --- Bookmarks ---
 
   Future<List<BookmarkGroup>> getGroups() async {
     final d = await db;
@@ -130,5 +182,29 @@ class DatabaseHelper {
       limit: limit,
     );
     return rows.map(NetworkMinuteStat.fromMap).toList();
+  }
+
+  // --- Key stats ---
+
+  Future<void> insertKeyMinuteStat({
+    required int minuteTs,
+    required int keyCount,
+  }) async {
+    final d = await db;
+    await d.insert(
+      'key_minute_stats',
+      {'minute_ts': minuteTs, 'key_count': keyCount},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<KeyMinuteStat>> getRecentKeyStats({int limit = 30}) async {
+    final d = await db;
+    final rows = await d.query(
+      'key_minute_stats',
+      orderBy: 'minute_ts DESC',
+      limit: limit,
+    );
+    return rows.map(KeyMinuteStat.fromMap).toList();
   }
 }
