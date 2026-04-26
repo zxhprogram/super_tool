@@ -1,5 +1,7 @@
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
+import '../utils/app_logger.dart';
+import 'dll.dart';
 
 typedef _StartKeyListenerNative = Void Function();
 typedef _StopKeyListenerNative = Void Function();
@@ -20,23 +22,30 @@ class KeyListenerBindings {
   late final _FreeStringDart _freeString;
 
   KeyListenerBindings() {
-    final dylib = DynamicLibrary.open('super_tool_plugin.dll');
-
-    startKeyListener = dylib
-        .lookupFunction<_StartKeyListenerNative, void Function()>(
-            'StartKeyListener');
-
-    stopKeyListener = dylib
-        .lookupFunction<_StopKeyListenerNative, void Function()>(
-            'StopKeyListener');
-
-    registerKeyCallback = dylib
-        .lookupFunction<_RegisterKeyCallbackNative, _RegisterKeyCallbackDart>(
-            'RegisterKeyCallback');
-
-    _freeString = dylib
-        .lookupFunction<_FreeStringNative, _FreeStringDart>('FreeString');
+    try {
+      startKeyListener = dylib
+          .lookupFunction<_StartKeyListenerNative, void Function()>(
+              'StartKeyListener');
+      stopKeyListener = dylib
+          .lookupFunction<_StopKeyListenerNative, void Function()>(
+              'StopKeyListener');
+      registerKeyCallback = dylib
+          .lookupFunction<_RegisterKeyCallbackNative, _RegisterKeyCallbackDart>(
+              'RegisterKeyCallback');
+      _freeString = dylib
+          .lookupFunction<_FreeStringNative, _FreeStringDart>('FreeString');
+      logInfo('KeyListenerBindings initialized');
+    } catch (e, st) {
+      logError('KeyListenerBindings.init', e, st);
+      rethrow;
+    }
   }
 
-  void freeString(Pointer<Utf8> ptr) => _freeString(ptr);
+  void freeString(Pointer<Utf8> ptr) {
+    try {
+      _freeString(ptr);
+    } catch (e, st) {
+      logError('KeyListenerBindings.freeString', e, st);
+    }
+  }
 }
