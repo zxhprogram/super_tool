@@ -1,5 +1,6 @@
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'app_usage/app_usage_service.dart';
 import 'clipboard/clipboard_service.dart';
 import 'db/database_helper.dart';
 import 'ffi/key_listener_service.dart';
@@ -19,6 +20,8 @@ void main() async {
     logInfo('networkService started');
     clipboardService.start();
     logInfo('clipboardService started');
+    appUsageService.start();
+    logInfo('appUsageService started');
 
     final enabled = await DatabaseHelper().getSetting('key_listener_enabled');
     if (enabled == 'true') {

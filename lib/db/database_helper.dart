@@ -1,4 +1,5 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'app_usage_model.dart';
 import 'bookmark_model.dart';
 import 'clipboard_model.dart';
 import 'key_model.dart';
@@ -21,7 +22,7 @@ class DatabaseHelper {
     final path = '$dbPath/super_tool.db';
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE bookmark_groups (
@@ -76,6 +77,19 @@ class DatabaseHelper {
             'CREATE INDEX idx_clipboard_hash ON clipboard_history(hash)');
         await db.execute(
             'CREATE INDEX idx_clipboard_created ON clipboard_history(created_at)');
+        await db.execute('''
+          CREATE TABLE app_usage_minutes (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            process_name TEXT    NOT NULL,
+            minute_ts    INTEGER NOT NULL,
+            seconds      INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(process_name, minute_ts)
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX idx_app_usage_process ON app_usage_minutes(process_name)');
+        await db.execute(
+            'CREATE INDEX idx_app_usage_minute ON app_usage_minutes(minute_ts)');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -120,6 +134,21 @@ class DatabaseHelper {
               'CREATE INDEX IF NOT EXISTS idx_clipboard_hash ON clipboard_history(hash)');
           await db.execute(
               'CREATE INDEX IF NOT EXISTS idx_clipboard_created ON clipboard_history(created_at)');
+        }
+        if (oldVersion < 6) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS app_usage_minutes (
+              id           INTEGER PRIMARY KEY AUTOINCREMENT,
+              process_name TEXT    NOT NULL,
+              minute_ts    INTEGER NOT NULL,
+              seconds      INTEGER NOT NULL DEFAULT 0,
+              UNIQUE(process_name, minute_ts)
+            )
+          ''');
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_app_usage_process ON app_usage_minutes(process_name)');
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_app_usage_minute ON app_usage_minutes(minute_ts)');
         }
       },
     );
@@ -298,5 +327,46 @@ class DatabaseHelper {
   Future<void> clearClipboardHistory() async {
     final d = await db;
     await d.delete('clipboard_history');
+  }
+
+  // --- App usage ---
+
+  Future<void> addAppUsageSeconds({
+    required String processName,
+    required int minuteTs,
+    required int seconds,
+  }) async {
+    final d = await db;
+    await d.rawInsert('''
+      INSERT INTO app_usage_minutes (process_name, minute_ts, seconds)
+      VALUES (?, ?, ?)
+      ON CONFLICT(process_name, minute_ts)
+      DO UPDATE SET seconds = seconds + excluded.seconds
+    ''', [processName, minuteTs, seconds]);
+  }
+
+  Future<List<AppUsageSummary>> getAppUsageSummary() async {
+    final d = await db;
+    final rows = await d.rawQuery('''
+      SELECT process_name, SUM(seconds) as total_seconds
+      FROM app_usage_minutes
+      GROUP BY process_name
+      ORDER BY total_seconds DESC
+    ''');
+    return rows.map(AppUsageSummary.fromMap).toList();
+  }
+
+  Future<List<AppUsageMinute>> getAppUsageByProcess({
+    required String processName,
+    required int sinceTs,
+  }) async {
+    final d = await db;
+    final rows = await d.query(
+      'app_usage_minutes',
+      where: 'process_name = ? AND minute_ts >= ?',
+      whereArgs: [processName, sinceTs],
+      orderBy: 'minute_ts ASC',
+    );
+    return rows.map(AppUsageMinute.fromMap).toList();
   }
 }

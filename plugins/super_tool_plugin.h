@@ -24,11 +24,20 @@ extern const char *_GoStringPtr(_GoString_ s);
 #line 3 "main.go"
 
 #include <stdlib.h>
+#include <windows.h>
 
 typedef void (*KeyCallback)(const char*);
 
 static inline void bridge_key_callback(KeyCallback cb, const char* event) {
     cb(event);
+}
+
+static DWORD getActiveWindowPid() {
+    HWND hwnd = GetForegroundWindow();
+    if (hwnd == NULL) return 0;
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    return pid;
 }
 
 #line 1 "cgo-generated-wrapper"
@@ -98,6 +107,9 @@ extern __declspec(dllexport) void StartKeyListener(void);
 extern __declspec(dllexport) void StopKeyListener(void);
 extern __declspec(dllexport) void FreeString(char* s);
 extern __declspec(dllexport) char* GetNetStats(void);
+extern __declspec(dllexport) char* GetSystemStats(void);
+extern __declspec(dllexport) char* GetEnvVars(void);
+extern __declspec(dllexport) char* GetActiveWindowInfo(void);
 
 #ifdef __cplusplus
 }

@@ -81,6 +81,13 @@ class WelcomePage extends StatelessWidget {
                 description: '文本/图片/文件历史记录',
                 onTap: () => context.go('/clipboard'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.bar_chart,
+                title: '应用统计',
+                description: '应用程序使用时长记录',
+                onTap: () => context.go('/app-usage'),
+              ),
             ],
           ),
         ],

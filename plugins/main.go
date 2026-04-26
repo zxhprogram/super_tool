@@ -2,11 +2,20 @@ package main
 
 /*
 #include <stdlib.h>
+#include <windows.h>
 
 typedef void (*KeyCallback)(const char*);
 
 static inline void bridge_key_callback(KeyCallback cb, const char* event) {
     cb(event);
+}
+
+static DWORD getActiveWindowPid() {
+    HWND hwnd = GetForegroundWindow();
+    if (hwnd == NULL) return 0;
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    return pid;
 }
 */
 import "C"
@@ -19,12 +28,14 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/go-vgo/robotgo"
 	hook "github.com/robotn/gohook"
 	pscpu "github.com/shirou/gopsutil/v3/cpu"
 	psdisk "github.com/shirou/gopsutil/v3/disk"
 	pshost "github.com/shirou/gopsutil/v3/host"
 	psmem "github.com/shirou/gopsutil/v3/mem"
 	psnet "github.com/shirou/gopsutil/v3/net"
+	psprocess "github.com/shirou/gopsutil/v3/process"
 )
 
 var (
@@ -255,6 +266,26 @@ func GetEnvVars() *C.char {
 	if err != nil {
 		return C.CString(`[]`)
 	}
+	return C.CString(string(data))
+}
+
+//export GetActiveWindowInfo
+func GetActiveWindowInfo() *C.char {
+	title := robotgo.GetTitle()
+	pid := int32(C.getActiveWindowPid())
+
+	procName := ""
+	if proc, err := psprocess.NewProcess(pid); err == nil {
+		if name, err := proc.Name(); err == nil {
+			procName = strings.TrimSuffix(name, ".exe")
+		}
+	}
+
+	type payload struct {
+		ProcessName string `json:"processName"`
+		WindowTitle string `json:"windowTitle"`
+	}
+	data, _ := json.Marshal(payload{ProcessName: procName, WindowTitle: title})
 	return C.CString(string(data))
 }
 

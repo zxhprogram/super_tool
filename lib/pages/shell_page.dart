@@ -77,6 +77,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('剪贴板历史'),
               child: const Icon(Icons.content_paste),
             ),
+            NavigationItem(
+              key: const ValueKey('/app-usage'),
+              label: const Text('应用统计'),
+              child: const Icon(Icons.bar_chart),
+            ),
           ],
         ),
         Expanded(child: child),
