@@ -72,6 +72,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('GitHub 趋势'),
               child: const Icon(Icons.trending_up),
             ),
+            NavigationItem(
+              key: const ValueKey('/clipboard'),
+              label: const Text('剪贴板历史'),
+              child: const Icon(Icons.content_paste),
+            ),
           ],
         ),
         Expanded(child: child),

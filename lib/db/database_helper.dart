@@ -1,5 +1,6 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'bookmark_model.dart';
+import 'clipboard_model.dart';
 import 'key_model.dart';
 import 'network_model.dart';
 
@@ -20,7 +21,7 @@ class DatabaseHelper {
     final path = '$dbPath/super_tool.db';
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE bookmark_groups (
@@ -61,6 +62,20 @@ class DatabaseHelper {
             value TEXT NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE clipboard_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,
+            content TEXT,
+            preview TEXT,
+            hash TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX idx_clipboard_hash ON clipboard_history(hash)');
+        await db.execute(
+            'CREATE INDEX idx_clipboard_created ON clipboard_history(created_at)');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -89,6 +104,22 @@ class DatabaseHelper {
               value TEXT NOT NULL
             )
           ''');
+        }
+        if (oldVersion < 5) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS clipboard_history (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              type TEXT NOT NULL,
+              content TEXT,
+              preview TEXT,
+              hash TEXT NOT NULL,
+              created_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_clipboard_hash ON clipboard_history(hash)');
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_clipboard_created ON clipboard_history(created_at)');
         }
       },
     );
@@ -226,5 +257,46 @@ class DatabaseHelper {
       limit: limit,
     );
     return rows.map(KeyMinuteStat.fromMap).toList();
+  }
+
+  // --- Clipboard history ---
+
+  Future<bool> clipboardHashExists(String hash) async {
+    final d = await db;
+    final rows = await d.query('clipboard_history',
+        where: 'hash = ?', whereArgs: [hash], limit: 1);
+    return rows.isNotEmpty;
+  }
+
+  Future<int> insertClipboardRecord(ClipboardRecord r) async {
+    final d = await db;
+    return d.insert('clipboard_history', r.toMap()..remove('id'));
+  }
+
+  Future<List<ClipboardRecord>> getClipboardRecords({
+    String? type,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final d = await db;
+    final rows = await d.query(
+      'clipboard_history',
+      where: type != null ? 'type = ?' : null,
+      whereArgs: type != null ? [type] : null,
+      orderBy: 'created_at DESC',
+      limit: limit,
+      offset: offset,
+    );
+    return rows.map(ClipboardRecord.fromMap).toList();
+  }
+
+  Future<void> deleteClipboardRecord(int id) async {
+    final d = await db;
+    await d.delete('clipboard_history', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> clearClipboardHistory() async {
+    final d = await db;
+    await d.delete('clipboard_history');
   }
 }

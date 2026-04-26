@@ -74,6 +74,13 @@ class WelcomePage extends StatelessWidget {
                 description: '仓库与开发者热度榜',
                 onTap: () => context.go('/github-trending'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.content_paste,
+                title: '剪贴板历史',
+                description: '文本/图片/文件历史记录',
+                onTap: () => context.go('/clipboard'),
+              ),
             ],
           ),
         ],
