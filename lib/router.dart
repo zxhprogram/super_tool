@@ -5,6 +5,7 @@ import 'pages/formatter_page.dart';
 import 'pages/bookmark_page.dart';
 import 'pages/network_page.dart';
 import 'pages/github_trending_page.dart';
+import 'pages/system_overview_page.dart';
 import 'pages/shell_page.dart';
 
 final router = GoRouter(
@@ -19,6 +20,7 @@ final router = GoRouter(
         GoRoute(path: '/bookmarks', builder: (context, state) => const BookmarkPage()),
         GoRoute(path: '/network', builder: (context, state) => const NetworkPage()),
         GoRoute(path: '/github-trending', builder: (context, state) => const GitHubTrendingPage()),
+        GoRoute(path: '/system', builder: (context, state) => const SystemOverviewPage()),
       ],
     ),
   ],

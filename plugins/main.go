@@ -13,10 +13,17 @@ import "C"
 
 import (
 	"encoding/json"
+	"os"
+	"sort"
+	"strings"
 	"sync"
 	"unsafe"
 
 	hook "github.com/robotn/gohook"
+	pscpu "github.com/shirou/gopsutil/v3/cpu"
+	psdisk "github.com/shirou/gopsutil/v3/disk"
+	pshost "github.com/shirou/gopsutil/v3/host"
+	psmem "github.com/shirou/gopsutil/v3/mem"
 	psnet "github.com/shirou/gopsutil/v3/net"
 )
 
@@ -144,6 +151,109 @@ func GetNetStats() *C.char {
 	data, err := json.Marshal(payload{BytesSent: stats[0].BytesSent, BytesRecv: stats[0].BytesRecv})
 	if err != nil {
 		return C.CString(`{"bytes_sent":0,"bytes_recv":0}`)
+	}
+	return C.CString(string(data))
+}
+
+//export GetSystemStats
+func GetSystemStats() *C.char {
+	type diskInfo struct {
+		Path        string  `json:"path"`
+		Total       uint64  `json:"total"`
+		Used        uint64  `json:"used"`
+		Free        uint64  `json:"free"`
+		UsedPercent float64 `json:"usedPercent"`
+		Fstype      string  `json:"fstype"`
+	}
+	type netIface struct {
+		Name  string   `json:"name"`
+		Addrs []string `json:"addrs"`
+		Flags []string `json:"flags"`
+	}
+	type payload struct {
+		Uptime     uint64     `json:"uptime"`
+		Platform   string     `json:"platform"`
+		Hostname   string     `json:"hostname"`
+		MemTotal   uint64     `json:"memTotal"`
+		MemUsed    uint64     `json:"memUsed"`
+		MemPercent float64    `json:"memPercent"`
+		CpuPercent float64    `json:"cpuPercent"`
+		Disks      []diskInfo `json:"disks"`
+		NetIfaces  []netIface `json:"netIfaces"`
+	}
+
+	var p payload
+
+	if uptime, err := pshost.Uptime(); err == nil {
+		p.Uptime = uptime
+	}
+	if info, err := pshost.Info(); err == nil {
+		p.Platform = info.Platform + " " + info.PlatformVersion
+		p.Hostname = info.Hostname
+	}
+	if vm, err := psmem.VirtualMemory(); err == nil {
+		p.MemTotal = vm.Total
+		p.MemUsed = vm.Used
+		p.MemPercent = vm.UsedPercent
+	}
+	if pcts, err := pscpu.Percent(0, false); err == nil && len(pcts) > 0 {
+		p.CpuPercent = pcts[0]
+	}
+	if parts, err := psdisk.Partitions(false); err == nil {
+		for _, part := range parts {
+			if u, err := psdisk.Usage(part.Mountpoint); err == nil {
+				p.Disks = append(p.Disks, diskInfo{
+					Path:        u.Path,
+					Total:       u.Total,
+					Used:        u.Used,
+					Free:        u.Free,
+					UsedPercent: u.UsedPercent,
+					Fstype:      u.Fstype,
+				})
+			}
+		}
+	}
+	if ifaces, err := psnet.Interfaces(); err == nil {
+		for _, iface := range ifaces {
+			ni := netIface{Name: iface.Name}
+			for _, addr := range iface.Addrs {
+				ni.Addrs = append(ni.Addrs, addr.Addr)
+			}
+			for _, flag := range iface.Flags {
+				ni.Flags = append(ni.Flags, flag)
+			}
+			p.NetIfaces = append(p.NetIfaces, ni)
+		}
+	}
+
+	data, err := json.Marshal(p)
+	if err != nil {
+		return C.CString(`{}`)
+	}
+	return C.CString(string(data))
+}
+
+//export GetEnvVars
+func GetEnvVars() *C.char {
+	type envVar struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+	raw := os.Environ()
+	vars := make([]envVar, 0, len(raw))
+	for _, e := range raw {
+		idx := strings.IndexByte(e, '=')
+		if idx < 0 {
+			continue
+		}
+		vars = append(vars, envVar{Key: e[:idx], Value: e[idx+1:]})
+	}
+	sort.Slice(vars, func(i, j int) bool {
+		return strings.ToLower(vars[i].Key) < strings.ToLower(vars[j].Key)
+	})
+	data, err := json.Marshal(vars)
+	if err != nil {
+		return C.CString(`[]`)
 	}
 	return C.CString(string(data))
 }

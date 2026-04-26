@@ -62,6 +62,13 @@ class WelcomePage extends StatelessWidget {
               ),
               const Gap(16),
               _FeatureCard(
+                icon: Icons.monitor_heart,
+                title: '系统总览',
+                description: 'CPU/内存/磁盘/网络监控',
+                onTap: () => context.go('/system'),
+              ),
+              const Gap(16),
+              _FeatureCard(
                 icon: Icons.trending_up,
                 title: 'GitHub 趋势',
                 description: '仓库与开发者热度榜',

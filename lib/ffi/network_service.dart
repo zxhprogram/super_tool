@@ -40,6 +40,13 @@ class NetworkService {
 
   Stream<NetworkSnapshot> get snapshots => _controller.stream;
 
+  NetworkSnapshot get lastSnapshot => NetworkSnapshot(
+        uploadBps: 0,
+        downloadBps: 0,
+        totalSent: _sessionSent,
+        totalRecv: _sessionRecv,
+      );
+
   void start() {
     if (_running) return;
     _running = true;

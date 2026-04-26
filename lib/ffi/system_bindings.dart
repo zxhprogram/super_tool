@@ -1,0 +1,48 @@
+import 'dart:ffi';
+import 'package:ffi/ffi.dart';
+
+typedef _GetSystemStatsNative = Pointer<Utf8> Function();
+typedef _GetSystemStatsDart = Pointer<Utf8> Function();
+
+typedef _GetEnvVarsNative = Pointer<Utf8> Function();
+typedef _GetEnvVarsDart = Pointer<Utf8> Function();
+
+typedef _FreeStringNative = Void Function(Pointer<Utf8>);
+typedef _FreeStringDart = void Function(Pointer<Utf8>);
+
+class SystemBindings {
+  static final SystemBindings _instance = SystemBindings._();
+  factory SystemBindings() => _instance;
+
+  SystemBindings._() {
+    _dylib = DynamicLibrary.open('assets/dylib/super_tool_plugin.dll');
+    _getSystemStats =
+        _dylib.lookupFunction<_GetSystemStatsNative, _GetSystemStatsDart>(
+            'GetSystemStats');
+    _getEnvVars =
+        _dylib.lookupFunction<_GetEnvVarsNative, _GetEnvVarsDart>('GetEnvVars');
+    _freeString =
+        _dylib.lookupFunction<_FreeStringNative, _FreeStringDart>('FreeString');
+  }
+
+  late final DynamicLibrary _dylib;
+  late final _GetSystemStatsDart _getSystemStats;
+  late final _GetEnvVarsDart _getEnvVars;
+  late final _FreeStringDart _freeString;
+
+  String? getSystemStats() {
+    final ptr = _getSystemStats();
+    if (ptr == nullptr) return null;
+    final result = ptr.toDartString();
+    _freeString(ptr);
+    return result;
+  }
+
+  String? getEnvVars() {
+    final ptr = _getEnvVars();
+    if (ptr == nullptr) return null;
+    final result = ptr.toDartString();
+    _freeString(ptr);
+    return result;
+  }
+}

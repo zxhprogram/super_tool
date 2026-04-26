@@ -198,6 +198,12 @@ class DatabaseHelper {
     return rows.map(NetworkMinuteStat.fromMap).toList();
   }
 
+  Future<List<NetworkMinuteStat>> getAllNetStats() async {
+    final d = await db;
+    final rows = await d.query('network_minute_stats', orderBy: 'minute_ts ASC');
+    return rows.map(NetworkMinuteStat.fromMap).toList();
+  }
+
   // --- Key stats ---
 
   Future<void> insertKeyMinuteStat({
