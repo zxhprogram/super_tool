@@ -32,6 +32,12 @@ static inline void bridge_key_callback(KeyCallback cb, const char* event) {
     cb(event);
 }
 
+typedef void (*MouseCallback)(const char*);
+
+static inline void bridge_mouse_callback(MouseCallback cb, const char* event) {
+    cb(event);
+}
+
 static DWORD getActiveWindowPid() {
     HWND hwnd = GetForegroundWindow();
     if (hwnd == NULL) return 0;
@@ -105,6 +111,9 @@ extern "C" {
 extern __declspec(dllexport) void RegisterKeyCallback(KeyCallback cb);
 extern __declspec(dllexport) void StartKeyListener(void);
 extern __declspec(dllexport) void StopKeyListener(void);
+extern __declspec(dllexport) void RegisterMouseCallback(MouseCallback cb);
+extern __declspec(dllexport) void StartMouseListener(void);
+extern __declspec(dllexport) void StopMouseListener(void);
 extern __declspec(dllexport) void FreeString(char* s);
 extern __declspec(dllexport) char* GetNetStats(void);
 extern __declspec(dllexport) char* GetSystemStats(void);

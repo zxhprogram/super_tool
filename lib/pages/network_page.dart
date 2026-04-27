@@ -17,7 +17,9 @@ class _NetworkPageState extends State<NetworkPage> {
 
   NetworkSnapshot _snapshot = const NetworkSnapshot(
       uploadBps: 0, downloadBps: 0, totalSent: 0, totalRecv: 0);
-  List<NetworkMinuteStat> _history = [];
+
+  DateTime _selectedDate = DateTime.now();
+  List<NetworkMinuteStat> _dateHistory = [];
   int _lastMinuteTs = 0;
 
   @override
@@ -27,21 +29,56 @@ class _NetworkPageState extends State<NetworkPage> {
       setState(() => _snapshot = snap);
       _maybeRefreshHistory();
     });
-    _loadHistory();
+    _loadDateHistory();
   }
 
-  Future<void> _loadHistory() async {
-    final rows = await DatabaseHelper().getRecentNetStats(limit: 30);
-    setState(() => _history = rows.reversed.toList());
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
+  }
+
+  Future<void> _loadDateHistory() async {
+    final rows = await DatabaseHelper().getNetStatsByDate(_selectedDate);
+    setState(() => _dateHistory = rows);
   }
 
   void _maybeRefreshHistory() {
+    if (!_isToday) return;
     final nowMinuteTs =
         (DateTime.now().millisecondsSinceEpoch ~/ 1000) ~/ 60 * 60;
     if (nowMinuteTs != _lastMinuteTs) {
       _lastMinuteTs = nowMinuteTs;
-      _loadHistory();
+      _loadDateHistory();
     }
+  }
+
+  void _goToPrevDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+      _dateHistory = [];
+    });
+    _loadDateHistory();
+  }
+
+  void _goToNextDay() {
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final next = _selectedDate.add(const Duration(days: 1));
+    if (next.isAfter(tomorrow)) return;
+    setState(() {
+      _selectedDate = next;
+      _dateHistory = [];
+    });
+    _loadDateHistory();
+  }
+
+  void _goToToday() {
+    setState(() {
+      _selectedDate = DateTime.now();
+      _dateHistory = [];
+    });
+    _loadDateHistory();
   }
 
   @override
@@ -66,8 +103,31 @@ class _NetworkPageState extends State<NetworkPage> {
     return '${(bytes / 1024).toStringAsFixed(1)} KB';
   }
 
+  String _formatDate(DateTime d) {
+    final now = DateTime.now();
+    if (d.year == now.year && d.month == now.month && d.day == now.day) {
+      return '今天';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (d.year == yesterday.year &&
+        d.month == yesterday.month &&
+        d.day == yesterday.day) {
+      return '昨天';
+    }
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final totalSent =
+        _dateHistory.fold<int>(0, (sum, s) => sum + s.bytesSent);
+    final totalRecv =
+        _dateHistory.fold<int>(0, (sum, s) => sum + s.bytesRecv);
+
+    final isNextDisabled = _isToday;
+
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -77,8 +137,7 @@ class _NetworkPageState extends State<NetworkPage> {
           const Gap(8),
           Text(
             '实时网速 · 流量统计 · 趋势图表',
-            style: TextStyle(
-                color: Theme.of(context).colorScheme.mutedForeground),
+            style: TextStyle(color: theme.colorScheme.mutedForeground),
           ),
           const Gap(24),
           Row(
@@ -98,11 +157,7 @@ class _NetworkPageState extends State<NetworkPage> {
                   value: _formatSpeed(_snapshot.downloadBps),
                 ),
               ),
-            ],
-          ),
-          const Gap(16),
-          Row(
-            children: [
+              const Gap(16),
               Expanded(
                 child: _StatCard(
                   icon: Icons.cloud_upload,
@@ -121,13 +176,99 @@ class _NetworkPageState extends State<NetworkPage> {
             ],
           ),
           const Gap(24),
-          const Text('流量趋势（最近30分钟）').semiBold(),
+          Row(
+            children: [
+              OutlineButton(
+                onPressed: _goToPrevDay,
+                density: ButtonDensity.compact,
+                child: const Icon(Icons.chevron_left, size: 18),
+              ),
+              const Gap(8),
+              Text(
+                _formatDate(_selectedDate),
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const Gap(8),
+              OutlineButton(
+                onPressed: isNextDisabled ? null : _goToNextDay,
+                density: ButtonDensity.compact,
+                child: const Icon(Icons.chevron_right, size: 18),
+              ),
+              const Gap(8),
+              if (!_isToday)
+                OutlineButton(
+                  onPressed: _goToToday,
+                  density: ButtonDensity.compact,
+                  child: const Text('今天'),
+                ),
+              const Spacer(),
+              _DateSumChip(
+                icon: Icons.cloud_upload,
+                label: '上传',
+                value: _formatBytes(totalSent),
+                color: theme.colorScheme.primary,
+              ),
+              const Gap(12),
+              _DateSumChip(
+                icon: Icons.cloud_download,
+                label: '下载',
+                value: _formatBytes(totalRecv),
+                color: const Color(0xFF60A5FA),
+              ),
+            ],
+          ),
           const Gap(12),
+          Text(
+            '流量趋势（${_formatDate(_selectedDate)}）',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ).muted(),
+          const Gap(8),
           Expanded(
-            child: _TrafficChart(data: _history),
+            child: _TrafficChart(data: _dateHistory),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DateSumChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _DateSumChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const Gap(4),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.mutedForeground,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -258,8 +399,26 @@ class _TrafficChart extends StatelessWidget {
               ),
             ),
           ),
-          bottomTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 20,
+              interval: data.length > 12 ? (data.length / 6).ceilToDouble() : 1,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= data.length) return const SizedBox();
+                final ts = data[idx].minuteTs;
+                final dt = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+                return Text(
+                  '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: theme.colorScheme.mutedForeground,
+                  ),
+                );
+              },
+            ),
+          ),
           topTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:

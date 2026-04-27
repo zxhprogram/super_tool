@@ -87,6 +87,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('AI 对话'),
               child: const Icon(Icons.smart_toy),
             ),
+            NavigationItem(
+              key: const ValueKey('/mouse-stats'),
+              label: const Text('鼠标统计'),
+              child: const Icon(Icons.mouse),
+            ),
           ],
         ),
         Expanded(child: child),

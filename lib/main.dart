@@ -4,6 +4,7 @@ import 'app_usage/app_usage_service.dart';
 import 'clipboard/clipboard_service.dart';
 import 'db/database_helper.dart';
 import 'ffi/key_listener_service.dart';
+import 'ffi/mouse_listener_service.dart';
 import 'ffi/network_service.dart';
 import 'router.dart';
 import 'utils/app_logger.dart';
@@ -22,6 +23,8 @@ void main() async {
     logInfo('clipboardService started');
     appUsageService.start();
     logInfo('appUsageService started');
+    mouseListenerService.start();
+    logInfo('mouseListenerService started');
 
     final enabled = await DatabaseHelper().getSetting('key_listener_enabled');
     if (enabled == 'true') {

@@ -95,6 +95,13 @@ class WelcomePage extends StatelessWidget {
                 description: '多模型 LLM 聊天',
                 onTap: () => context.go('/llm-chat'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.mouse,
+                title: '鼠标统计',
+                description: '全局鼠标点击计数',
+                onTap: () => context.go('/mouse-stats'),
+              ),
             ],
           ),
         ],

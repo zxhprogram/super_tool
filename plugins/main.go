@@ -10,6 +10,12 @@ static inline void bridge_key_callback(KeyCallback cb, const char* event) {
     cb(event);
 }
 
+typedef void (*MouseCallback)(const char*);
+
+static inline void bridge_mouse_callback(MouseCallback cb, const char* event) {
+    cb(event);
+}
+
 static DWORD getActiveWindowPid() {
     HWND hwnd = GetForegroundWindow();
     if (hwnd == NULL) return 0;
@@ -43,6 +49,13 @@ var (
 	running bool
 	stopCh  chan struct{}
 	keyCb   C.KeyCallback
+)
+
+var (
+	mouseMu      sync.Mutex
+	mouseRunning bool
+	mouseStopCh  chan struct{}
+	mouseCb      C.MouseCallback
 )
 
 var keyNames = map[uint16]string{
@@ -142,6 +155,75 @@ func StopKeyListener() {
 	running = false
 	keyCb = nil
 	close(stopCh)
+}
+
+//export RegisterMouseCallback
+func RegisterMouseCallback(cb C.MouseCallback) {
+	mouseMu.Lock()
+	defer mouseMu.Unlock()
+	mouseCb = cb
+}
+
+//export StartMouseListener
+func StartMouseListener() {
+	mouseMu.Lock()
+	if mouseRunning {
+		mouseMu.Unlock()
+		return
+	}
+	mouseRunning = true
+	mouseStopCh = make(chan struct{})
+	mouseMu.Unlock()
+
+	go func() {
+		evChan := hook.Start()
+		defer hook.End()
+
+		for {
+			select {
+			case <-mouseStopCh:
+				return
+			case ev, ok := <-evChan:
+				if !ok {
+					return
+				}
+				if ev.Kind != hook.MouseUp {
+					continue
+				}
+				var btn string
+				switch ev.Button {
+				case 1:
+					btn = "left"
+				case 2:
+					btn = "right"
+				case 3:
+					btn = "middle"
+				default:
+					btn = "other"
+				}
+				mouseMu.Lock()
+				cb := mouseCb
+				mouseMu.Unlock()
+				if cb != nil {
+					cstr := C.CString(btn)
+					C.bridge_mouse_callback(cb, cstr)
+					C.free(unsafe.Pointer(cstr))
+				}
+			}
+		}
+	}()
+}
+
+//export StopMouseListener
+func StopMouseListener() {
+	mouseMu.Lock()
+	defer mouseMu.Unlock()
+	if !mouseRunning {
+		return
+	}
+	mouseRunning = false
+	mouseCb = nil
+	close(mouseStopCh)
 }
 
 //export FreeString

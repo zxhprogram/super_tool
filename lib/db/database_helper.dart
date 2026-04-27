@@ -4,6 +4,7 @@ import 'bookmark_model.dart';
 import 'clipboard_model.dart';
 import 'key_model.dart';
 import 'llm_model.dart';
+import 'mouse_model.dart';
 import 'network_model.dart';
 
 class DatabaseHelper {
@@ -23,7 +24,7 @@ class DatabaseHelper {
     final path = '$dbPath/super_tool.db';
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE bookmark_groups (
@@ -121,6 +122,13 @@ class DatabaseHelper {
             FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
           )
         ''');
+        await db.execute('''
+          CREATE TABLE mouse_minute_stats (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            minute_ts   INTEGER NOT NULL UNIQUE,
+            click_count INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -210,6 +218,15 @@ class DatabaseHelper {
               content    TEXT    NOT NULL,
               created_at INTEGER NOT NULL,
               FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+            )
+          ''');
+        }
+        if (oldVersion < 8) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS mouse_minute_stats (
+              id          INTEGER PRIMARY KEY AUTOINCREMENT,
+              minute_ts   INTEGER NOT NULL UNIQUE,
+              click_count INTEGER NOT NULL DEFAULT 0
             )
           ''');
         }
@@ -317,6 +334,21 @@ class DatabaseHelper {
       'network_minute_stats',
       orderBy: 'minute_ts DESC',
       limit: limit,
+    );
+    return rows.map(NetworkMinuteStat.fromMap).toList();
+  }
+
+  Future<List<NetworkMinuteStat>> getNetStatsByDate(DateTime date) async {
+    final startTs =
+        DateTime(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+            1000;
+    final endTs = startTs + 86400;
+    final d = await db;
+    final rows = await d.query(
+      'network_minute_stats',
+      where: 'minute_ts >= ? AND minute_ts < ?',
+      whereArgs: [startTs, endTs],
+      orderBy: 'minute_ts ASC',
     );
     return rows.map(NetworkMinuteStat.fromMap).toList();
   }
@@ -497,5 +529,29 @@ class DatabaseHelper {
   Future<int> insertMessage(ChatMessage m) async {
     final d = await db;
     return d.insert('chat_messages', m.toMap()..remove('id'));
+  }
+
+  // --- Mouse stats ---
+
+  Future<void> insertMouseMinuteStat({
+    required int minuteTs,
+    required int clickCount,
+  }) async {
+    final d = await db;
+    await d.insert(
+      'mouse_minute_stats',
+      {'minute_ts': minuteTs, 'click_count': clickCount},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<MouseMinuteStat>> getRecentMouseStats({int limit = 30}) async {
+    final d = await db;
+    final rows = await d.query(
+      'mouse_minute_stats',
+      orderBy: 'minute_ts DESC',
+      limit: limit,
+    );
+    return rows.map(MouseMinuteStat.fromMap).toList();
   }
 }
