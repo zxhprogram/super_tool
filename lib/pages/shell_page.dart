@@ -82,6 +82,11 @@ class ShellPage extends StatelessWidget {
               label: const Text('应用统计'),
               child: const Icon(Icons.bar_chart),
             ),
+            NavigationItem(
+              key: const ValueKey('/llm-chat'),
+              label: const Text('AI 对话'),
+              child: const Icon(Icons.smart_toy),
+            ),
           ],
         ),
         Expanded(child: child),

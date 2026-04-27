@@ -3,6 +3,7 @@ import 'app_usage_model.dart';
 import 'bookmark_model.dart';
 import 'clipboard_model.dart';
 import 'key_model.dart';
+import 'llm_model.dart';
 import 'network_model.dart';
 
 class DatabaseHelper {
@@ -22,7 +23,7 @@ class DatabaseHelper {
     final path = '$dbPath/super_tool.db';
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE bookmark_groups (
@@ -90,6 +91,36 @@ class DatabaseHelper {
             'CREATE INDEX idx_app_usage_process ON app_usage_minutes(process_name)');
         await db.execute(
             'CREATE INDEX idx_app_usage_minute ON app_usage_minutes(minute_ts)');
+        await db.execute('''
+          CREATE TABLE llm_configs (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT    NOT NULL,
+            base_url   TEXT    NOT NULL,
+            api_key    TEXT    NOT NULL,
+            created_at INTEGER NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE chat_sessions (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id  INTEGER NOT NULL,
+            model_id   TEXT    NOT NULL,
+            title      TEXT    NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (config_id) REFERENCES llm_configs(id) ON DELETE CASCADE
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE chat_messages (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            role       TEXT    NOT NULL,
+            content    TEXT    NOT NULL,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -149,6 +180,38 @@ class DatabaseHelper {
               'CREATE INDEX IF NOT EXISTS idx_app_usage_process ON app_usage_minutes(process_name)');
           await db.execute(
               'CREATE INDEX IF NOT EXISTS idx_app_usage_minute ON app_usage_minutes(minute_ts)');
+        }
+        if (oldVersion < 7) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS llm_configs (
+              id         INTEGER PRIMARY KEY AUTOINCREMENT,
+              name       TEXT    NOT NULL,
+              base_url   TEXT    NOT NULL,
+              api_key    TEXT    NOT NULL,
+              created_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS chat_sessions (
+              id         INTEGER PRIMARY KEY AUTOINCREMENT,
+              config_id  INTEGER NOT NULL,
+              model_id   TEXT    NOT NULL,
+              title      TEXT    NOT NULL,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL,
+              FOREIGN KEY (config_id) REFERENCES llm_configs(id) ON DELETE CASCADE
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS chat_messages (
+              id         INTEGER PRIMARY KEY AUTOINCREMENT,
+              session_id INTEGER NOT NULL,
+              role       TEXT    NOT NULL,
+              content    TEXT    NOT NULL,
+              created_at INTEGER NOT NULL,
+              FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+            )
+          ''');
         }
       },
     );
@@ -368,5 +431,71 @@ class DatabaseHelper {
       orderBy: 'minute_ts ASC',
     );
     return rows.map(AppUsageMinute.fromMap).toList();
+  }
+
+  // --- LLM configs ---
+
+  Future<List<LlmConfig>> getLlmConfigs() async {
+    final d = await db;
+    final rows = await d.query('llm_configs', orderBy: 'created_at ASC');
+    return rows.map(LlmConfig.fromMap).toList();
+  }
+
+  Future<int> insertLlmConfig(LlmConfig c) async {
+    final d = await db;
+    return d.insert('llm_configs', c.toMap()..remove('id'));
+  }
+
+  Future<void> deleteLlmConfig(int id) async {
+    final d = await db;
+    await d.delete('llm_configs', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Chat sessions ---
+
+  Future<List<ChatSession>> getChatSessions() async {
+    final d = await db;
+    final rows =
+        await d.query('chat_sessions', orderBy: 'updated_at DESC');
+    return rows.map(ChatSession.fromMap).toList();
+  }
+
+  Future<int> insertChatSession(ChatSession s) async {
+    final d = await db;
+    return d.insert('chat_sessions', s.toMap()..remove('id'));
+  }
+
+  Future<void> updateChatSessionTitle(int id, String title) async {
+    final d = await db;
+    await d.update('chat_sessions', {'title': title},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> touchChatSession(int id, int updatedAt) async {
+    final d = await db;
+    await d.update('chat_sessions', {'updated_at': updatedAt},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteChatSession(int id) async {
+    final d = await db;
+    await d.delete('chat_messages', where: 'session_id = ?', whereArgs: [id]);
+    await d.delete('chat_sessions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Chat messages ---
+
+  Future<List<ChatMessage>> getMessages(int sessionId) async {
+    final d = await db;
+    final rows = await d.query('chat_messages',
+        where: 'session_id = ?',
+        whereArgs: [sessionId],
+        orderBy: 'created_at ASC');
+    return rows.map(ChatMessage.fromMap).toList();
+  }
+
+  Future<int> insertMessage(ChatMessage m) async {
+    final d = await db;
+    return d.insert('chat_messages', m.toMap()..remove('id'));
   }
 }

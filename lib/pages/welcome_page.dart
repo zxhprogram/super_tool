@@ -88,6 +88,13 @@ class WelcomePage extends StatelessWidget {
                 description: '应用程序使用时长记录',
                 onTap: () => context.go('/app-usage'),
               ),
+              const Gap(16),
+              _FeatureCard(
+                icon: Icons.smart_toy,
+                title: 'AI 对话',
+                description: '多模型 LLM 聊天',
+                onTap: () => context.go('/llm-chat'),
+              ),
             ],
           ),
         ],
