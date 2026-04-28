@@ -121,11 +121,21 @@ var keyNames = map[uint16]string{
 	18: "Alt", 19: "Pause", 20: "CapsLock", 27: "Escape", 32: "Space",
 	33: "PageUp", 34: "PageDown", 35: "End", 36: "Home",
 	37: "Left", 38: "Up", 39: "Right", 40: "Down",
-	45: "Insert", 46: "Delete",
+	44: "PrtSc", 45: "Insert", 46: "Delete",
 	91: "Win", 92: "Win", 93: "Menu",
+	// Left/Right modifier variants (sent by low-level hook)
+	160: "Shift", 161: "Shift",
+	162: "Ctrl", 163: "Ctrl",
+	164: "Alt", 165: "Alt",
+	// Function keys
 	112: "F1", 113: "F2", 114: "F3", 115: "F4", 116: "F5", 117: "F6",
 	118: "F7", 119: "F8", 120: "F9", 121: "F10", 122: "F11", 123: "F12",
+	124: "F13", 125: "F14", 126: "F15", 127: "F16",
+	// Lock keys
 	144: "NumLock", 145: "ScrollLock",
+	// Numpad operators
+	106: "Num*", 107: "Num+", 109: "Num-", 110: "Num.", 111: "Num/",
+	// Punctuation / symbol keys
 	186: ";", 187: "=", 188: ",", 189: "-", 190: ".", 191: "/", 192: "`",
 	219: "[", 220: "\\", 221: "]", 222: "'",
 }
