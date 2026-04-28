@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'app_usage/app_usage_service.dart';
@@ -18,12 +20,16 @@ void main() async {
     databaseFactory = databaseFactoryFfi;
     logInfo('sqflite initialized');
     networkService.start();
+    sleep(.new(seconds: 1));
     logInfo('networkService started');
     clipboardService.start();
+    sleep(.new(seconds: 1));
     logInfo('clipboardService started');
     appUsageService.start();
+    sleep(.new(seconds: 1));
     logInfo('appUsageService started');
     mouseListenerService.start();
+    sleep(.new(seconds: 1));
     logInfo('mouseListenerService started');
 
     final enabled = await DatabaseHelper().getSetting('key_listener_enabled');

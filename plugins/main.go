@@ -101,7 +101,6 @@ func maybeStartHook() {
 					}
 					cstr := C.CString(btn)
 					C.bridge_mouse_callback(mCb, cstr)
-					C.free(unsafe.Pointer(cstr))
 				}
 			}
 		}
