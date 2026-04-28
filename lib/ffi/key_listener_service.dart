@@ -16,11 +16,16 @@ class KeyListenerService {
   int _minuteBucketCount = 0;
   int? _currentMinuteTs;
 
+  final Map<String, int> _sessionKeyCounts = {};
+  final Map<String, int> _minuteKeyCounts = {};
+
   KeyListenerService() : _bindings = KeyListenerBindings();
 
   Stream<String> get keyEvents => _controller.stream;
   bool get isListening => _listening;
   int get sessionCount => _sessionCount;
+  Map<String, int> get currentMinuteKeyCounts =>
+      Map.unmodifiable(_minuteKeyCounts);
 
   void start() {
     if (_listening) return;
@@ -46,6 +51,13 @@ class KeyListenerService {
     if (eventPtr == nullptr) return;
     final event = eventPtr.toDartString();
     _bindings.freeString(eventPtr);
+
+    final keyName = event.contains(':')
+        ? event.split(':').sublist(1).join(':')
+        : event;
+    _sessionKeyCounts[keyName] = (_sessionKeyCounts[keyName] ?? 0) + 1;
+    _minuteKeyCounts[keyName] = (_minuteKeyCounts[keyName] ?? 0) + 1;
+
     _controller.add(event);
     _accumulateMinute();
   }
@@ -67,6 +79,11 @@ class KeyListenerService {
 
   void _persistMinute(int ts, int count) {
     DatabaseHelper().insertKeyMinuteStat(minuteTs: ts, keyCount: count);
+    if (_minuteKeyCounts.isNotEmpty) {
+      DatabaseHelper()
+          .insertKeyPressCounts(ts, Map<String, int>.from(_minuteKeyCounts));
+      _minuteKeyCounts.clear();
+    }
   }
 
   void dispose() {

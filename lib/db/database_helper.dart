@@ -24,7 +24,7 @@ class DatabaseHelper {
     final path = '$dbPath/super_tool.db';
     return openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE bookmark_groups (
@@ -129,6 +129,16 @@ class DatabaseHelper {
             click_count INTEGER NOT NULL DEFAULT 0
           )
         ''');
+        await db.execute('''
+          CREATE TABLE key_press_counts (
+            key_name  TEXT    NOT NULL,
+            minute_ts INTEGER NOT NULL,
+            count     INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (key_name, minute_ts)
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX idx_kpc_minute ON key_press_counts(minute_ts)');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -229,6 +239,18 @@ class DatabaseHelper {
               click_count INTEGER NOT NULL DEFAULT 0
             )
           ''');
+        }
+        if (oldVersion < 9) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS key_press_counts (
+              key_name  TEXT    NOT NULL,
+              minute_ts INTEGER NOT NULL,
+              count     INTEGER NOT NULL DEFAULT 1,
+              PRIMARY KEY (key_name, minute_ts)
+            )
+          ''');
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_kpc_minute ON key_press_counts(minute_ts)');
         }
       },
     );
@@ -381,6 +403,52 @@ class DatabaseHelper {
       limit: limit,
     );
     return rows.map(KeyMinuteStat.fromMap).toList();
+  }
+
+  Future<List<KeyMinuteStat>> getKeyStatsByDate(DateTime date) async {
+    final startTs =
+        DateTime(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+            1000;
+    final endTs = startTs + 86400;
+    final d = await db;
+    final rows = await d.query(
+      'key_minute_stats',
+      where: 'minute_ts >= ? AND minute_ts < ?',
+      whereArgs: [startTs, endTs],
+      orderBy: 'minute_ts ASC',
+    );
+    return rows.map(KeyMinuteStat.fromMap).toList();
+  }
+
+  Future<void> insertKeyPressCounts(
+      int minuteTs, Map<String, int> counts) async {
+    final d = await db;
+    final batch = d.batch();
+    counts.forEach((keyName, count) {
+      batch.rawInsert(
+        'INSERT INTO key_press_counts (key_name, minute_ts, count) VALUES (?, ?, ?) '
+        'ON CONFLICT(key_name, minute_ts) DO UPDATE SET count = count + excluded.count',
+        [keyName, minuteTs, count],
+      );
+    });
+    await batch.commit(noResult: true);
+  }
+
+  Future<Map<String, int>> getKeyCountsByDate(DateTime date) async {
+    final startTs =
+        DateTime(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+            1000;
+    final endTs = startTs + 86400;
+    final d = await db;
+    final rows = await d.rawQuery(
+      'SELECT key_name, SUM(count) as total FROM key_press_counts '
+      'WHERE minute_ts >= ? AND minute_ts < ? GROUP BY key_name',
+      [startTs, endTs],
+    );
+    return {
+      for (final r in rows)
+        r['key_name'] as String: (r['total'] as int? ?? 0)
+    };
   }
 
   // --- Clipboard history ---
