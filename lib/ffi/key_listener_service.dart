@@ -30,6 +30,7 @@ class KeyListenerService {
   void start() {
     if (_listening) return;
     _listening = true;
+    _sessionCount = 0;
 
     _nativeCallable = NativeCallable<Void Function(Pointer<Utf8>)>.listener(
       _onKeyEvent,
@@ -45,6 +46,14 @@ class KeyListenerService {
     _bindings.stopKeyListener();
     _nativeCallable?.close();
     _nativeCallable = null;
+    _flushCurrentBucket();
+  }
+
+  void _flushCurrentBucket() {
+    if (_minuteBucketCount > 0 && _currentMinuteTs != null) {
+      _persistMinute(_currentMinuteTs!, _minuteBucketCount);
+      _minuteBucketCount = 0;
+    }
   }
 
   void _onKeyEvent(Pointer<Utf8> eventPtr) {
@@ -71,7 +80,9 @@ class KeyListenerService {
     if (nowMinuteTs == _currentMinuteTs) {
       _minuteBucketCount++;
     } else {
-      _persistMinute(_currentMinuteTs!, _minuteBucketCount);
+      if (_minuteBucketCount > 0) {
+        _persistMinute(_currentMinuteTs!, _minuteBucketCount);
+      }
       _currentMinuteTs = nowMinuteTs;
       _minuteBucketCount = 1;
     }

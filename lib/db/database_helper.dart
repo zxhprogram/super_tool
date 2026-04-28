@@ -388,11 +388,12 @@ class DatabaseHelper {
     required int keyCount,
   }) async {
     final d = await db;
-    await d.insert(
-      'key_minute_stats',
-      {'minute_ts': minuteTs, 'key_count': keyCount},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await d.rawInsert('''
+      INSERT INTO key_minute_stats (minute_ts, key_count)
+      VALUES (?, ?)
+      ON CONFLICT(minute_ts)
+      DO UPDATE SET key_count = key_count + excluded.key_count
+    ''', [minuteTs, keyCount]);
   }
 
   Future<List<KeyMinuteStat>> getRecentKeyStats({int limit = 30}) async {
