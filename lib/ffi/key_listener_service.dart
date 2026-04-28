@@ -27,10 +27,16 @@ class KeyListenerService {
   Map<String, int> get currentMinuteKeyCounts =>
       Map.unmodifiable(_minuteKeyCounts);
 
+  Map<String, int> get sessionKeyCounts => Map.unmodifiable(_sessionKeyCounts);
+
   void start() {
     if (_listening) return;
     _listening = true;
     _sessionCount = 0;
+    _sessionKeyCounts.clear();
+    _minuteKeyCounts.clear();
+    _minuteBucketCount = 0;
+    _currentMinuteTs = null;
 
     _nativeCallable = NativeCallable<Void Function(Pointer<Utf8>)>.listener(
       _onKeyEvent,
@@ -64,11 +70,13 @@ class KeyListenerService {
     final keyName = event.contains(':')
         ? event.split(':').sublist(1).join(':')
         : event;
+
+    _accumulateMinute();
+
     _sessionKeyCounts[keyName] = (_sessionKeyCounts[keyName] ?? 0) + 1;
     _minuteKeyCounts[keyName] = (_minuteKeyCounts[keyName] ?? 0) + 1;
 
     _controller.add(event);
-    _accumulateMinute();
   }
 
   void _accumulateMinute() {

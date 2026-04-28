@@ -45,18 +45,77 @@ import (
 )
 
 var (
-	mu      sync.Mutex
-	running bool
-	stopCh  chan struct{}
-	keyCb   C.KeyCallback
-)
-
-var (
-	mouseMu      sync.Mutex
+	mu           sync.Mutex
+	keyRunning   bool
 	mouseRunning bool
-	mouseStopCh  chan struct{}
+	hookRunning  bool
+	hookStopCh   chan struct{}
+	keyCb        C.KeyCallback
 	mouseCb      C.MouseCallback
 )
+
+// maybeStartHook starts the single shared hook goroutine if not already running.
+// Must be called with mu held.
+func maybeStartHook() {
+	if hookRunning {
+		return
+	}
+	hookRunning = true
+	hookStopCh = make(chan struct{})
+
+	go func() {
+		evChan := hook.Start()
+		defer hook.End()
+
+		for {
+			select {
+			case <-hookStopCh:
+				return
+			case ev, ok := <-evChan:
+				if !ok {
+					return
+				}
+
+				mu.Lock()
+				kCb := keyCb
+				mCb := mouseCb
+				kRun := keyRunning
+				mRun := mouseRunning
+				mu.Unlock()
+
+				if ev.Kind == hook.KeyUp && kRun && kCb != nil {
+					name := resolveKeyName(ev.Rawcode, rune(ev.Keychar))
+					cstr := C.CString("up:" + name)
+					C.bridge_key_callback(kCb, cstr)
+				} else if ev.Kind == hook.MouseUp && mRun && mCb != nil {
+					var btn string
+					switch ev.Button {
+					case 1:
+						btn = "left"
+					case 2:
+						btn = "right"
+					case 3:
+						btn = "middle"
+					default:
+						btn = "other"
+					}
+					cstr := C.CString(btn)
+					C.bridge_mouse_callback(mCb, cstr)
+					C.free(unsafe.Pointer(cstr))
+				}
+			}
+		}
+	}()
+}
+
+// maybeStopHook stops the shared hook goroutine when no listeners remain.
+// Must be called with mu held.
+func maybeStopHook() {
+	if hookRunning && !keyRunning && !mouseRunning {
+		hookRunning = false
+		close(hookStopCh)
+	}
+}
 
 var keyNames = map[uint16]string{
 	8: "Backspace", 9: "Tab", 13: "Enter", 16: "Shift", 17: "Ctrl",
@@ -106,124 +165,54 @@ func RegisterKeyCallback(cb C.KeyCallback) {
 //export StartKeyListener
 func StartKeyListener() {
 	mu.Lock()
-	if running {
-		mu.Unlock()
+	defer mu.Unlock()
+	if keyRunning {
 		return
 	}
-	running = true
-	stopCh = make(chan struct{})
-	mu.Unlock()
-
-	go func() {
-		evChan := hook.Start()
-		defer hook.End()
-
-		for {
-			select {
-			case <-stopCh:
-				return
-			case ev, ok := <-evChan:
-				if !ok {
-					return
-				}
-				if ev.Kind != hook.KeyUp {
-					continue
-				}
-				name := resolveKeyName(ev.Rawcode, rune(ev.Keychar))
-				entry := "up:" + name
-
-				mu.Lock()
-				cb := keyCb
-				mu.Unlock()
-
-				if cb != nil {
-					cstr := C.CString(entry)
-					C.bridge_key_callback(cb, cstr)
-				}
-			}
-		}
-	}()
+	keyRunning = true
+	maybeStartHook()
 }
 
 //export StopKeyListener
 func StopKeyListener() {
 	mu.Lock()
 	defer mu.Unlock()
-	if !running {
+	if !keyRunning {
 		return
 	}
-	running = false
+	keyRunning = false
 	keyCb = nil
-	close(stopCh)
+	maybeStopHook()
 }
 
 //export RegisterMouseCallback
 func RegisterMouseCallback(cb C.MouseCallback) {
-	mouseMu.Lock()
-	defer mouseMu.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 	mouseCb = cb
 }
 
 //export StartMouseListener
 func StartMouseListener() {
-	mouseMu.Lock()
+	mu.Lock()
+	defer mu.Unlock()
 	if mouseRunning {
-		mouseMu.Unlock()
 		return
 	}
 	mouseRunning = true
-	mouseStopCh = make(chan struct{})
-	mouseMu.Unlock()
-
-	go func() {
-		evChan := hook.Start()
-		defer hook.End()
-
-		for {
-			select {
-			case <-mouseStopCh:
-				return
-			case ev, ok := <-evChan:
-				if !ok {
-					return
-				}
-				if ev.Kind != hook.MouseUp {
-					continue
-				}
-				var btn string
-				switch ev.Button {
-				case 1:
-					btn = "left"
-				case 2:
-					btn = "right"
-				case 3:
-					btn = "middle"
-				default:
-					btn = "other"
-				}
-				mouseMu.Lock()
-				cb := mouseCb
-				mouseMu.Unlock()
-				if cb != nil {
-					cstr := C.CString(btn)
-					C.bridge_mouse_callback(cb, cstr)
-					C.free(unsafe.Pointer(cstr))
-				}
-			}
-		}
-	}()
+	maybeStartHook()
 }
 
 //export StopMouseListener
 func StopMouseListener() {
-	mouseMu.Lock()
-	defer mouseMu.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 	if !mouseRunning {
 		return
 	}
 	mouseRunning = false
 	mouseCb = nil
-	close(mouseStopCh)
+	maybeStopHook()
 }
 
 //export FreeString

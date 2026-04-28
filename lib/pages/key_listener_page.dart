@@ -95,14 +95,10 @@ class _KeyListenerPageState extends State<KeyListenerPage> {
         _selectedDate.day == now.day;
   }
 
-  // Merged view: DB + current unpersisted minute (only for today)
+  // Merged view: session data for today (resets each launch), DB data for past dates
   Map<String, int> get _effectiveCounts {
     if (!_isToday) return _dbKeyCounts;
-    final merged = Map<String, int>.from(_dbKeyCounts);
-    keyListenerService.currentMinuteKeyCounts.forEach((k, v) {
-      merged[k] = (merged[k] ?? 0) + v;
-    });
-    return merged;
+    return keyListenerService.sessionKeyCounts;
   }
 
   @override
@@ -271,8 +267,10 @@ class _KeyListenerPageState extends State<KeyListenerPage> {
               ],
               const Gap(16),
               _StatChip(
-                label: '总按键',
-                value: '$totalCount 次',
+                label: _isToday ? '本次' : '总按键',
+                value: _isToday
+                    ? '${keyListenerService.sessionCount} 次'
+                    : '$totalCount 次',
                 color: theme.colorScheme.primary,
               ),
               const Gap(8),
