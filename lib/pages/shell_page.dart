@@ -11,6 +11,7 @@ class ShellPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final expanded = sidebarExpanded.watch(context);
     final location = GoRouterState.of(context).uri.path;
+    final theme = Theme.of(context);
 
     return Row(
       children: [
@@ -19,6 +20,9 @@ class ShellPage extends StatelessWidget {
           labelType: NavigationLabelType.expanded,
           labelPosition: NavigationLabelPosition.end,
           alignment: NavigationRailAlignment.start,
+          backgroundColor: theme.colorScheme.background.withValues(alpha: 0.6),
+          surfaceBlur: 12,
+          surfaceOpacity: 0.8,
           selectedKey: ValueKey(location),
           onSelected: (key) {
             if (key is ValueKey<String>) {
@@ -102,7 +106,16 @@ class ShellPage extends StatelessWidget {
             ),
           ],
         ),
-        Expanded(child: child),
+        Container(
+          width: 1,
+          color: theme.colorScheme.border.withValues(alpha: 0.3),
+        ),
+        Expanded(
+          child: Container(
+            color: theme.colorScheme.background.withValues(alpha: 0.95),
+            child: child,
+          ),
+        ),
       ],
     );
   }

@@ -4,6 +4,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../db/database_helper.dart';
 import '../db/key_model.dart';
 import '../ffi/key_listener_service.dart';
+import '../widgets/page_wrapper.dart';
 
 // ---------------------------------------------------------------------------
 // Key definition for keyboard layout
@@ -208,34 +209,29 @@ class _KeyListenerPageState extends State<KeyListenerPage> {
         : counts.entries.reduce((a, b) => a.value > b.value ? a : b);
     final maxCount = counts.isEmpty ? 0 : topEntry!.value;
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: '按键监听',
+      subtitle: '全局键盘事件监听，按键释放时记录',
+      breadcrumbLabel: '工具',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PrimaryButton(
+            onPressed: isListening ? null : _startListening,
+            leading: const Icon(Icons.play_arrow),
+            child: const Text('开始监听'),
+          ),
+          const Gap(8),
+          SecondaryButton(
+            onPressed: isListening ? _stopListening : null,
+            leading: const Icon(Icons.stop),
+            child: const Text('停止监听'),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            children: [
-              const Text('按键监听').h2(),
-              const Spacer(),
-              PrimaryButton(
-                onPressed: isListening ? null : _startListening,
-                leading: const Icon(Icons.play_arrow),
-                child: const Text('开始监听'),
-              ),
-              const Gap(8),
-              SecondaryButton(
-                onPressed: isListening ? _stopListening : null,
-                leading: const Icon(Icons.stop),
-                child: const Text('停止监听'),
-              ),
-            ],
-          ),
-          const Gap(6),
-          Text(
-            '全局键盘事件监听，按键释放时记录',
-            style: TextStyle(color: theme.colorScheme.mutedForeground),
-          ),
           const Gap(20),
           // Date nav + stats
           Row(

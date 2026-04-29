@@ -2,6 +2,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/github_trending_model.dart';
 import '../services/github_trending_service.dart';
+import '../widgets/page_wrapper.dart';
 
 const _languages = [
   ('全部', ''),
@@ -81,82 +82,81 @@ class _GitHubTrendingPageState extends State<GitHubTrendingPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: 'GitHub 趋势',
+      breadcrumbLabel: '发现',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 160,
+            child: Select<String>(
+              value: _language,
+              onChanged: (v) {
+                if (v != null && v != _language) {
+                  setState(() => _language = v);
+                  _refresh();
+                }
+              },
+              itemBuilder: (context, value) {
+                final label = _languages
+                    .firstWhere((e) => e.$2 == value,
+                        orElse: () => ('全部', ''))
+                    .$1;
+                return Text(label);
+              },
+              popup: SelectPopup(
+                items: SelectItemList(
+                  children: _languages
+                      .map((e) => SelectItemButton(
+                            value: e.$2,
+                            child: Text(e.$1),
+                          ))
+                      .toList(),
+                ),
+              ).call,
+            ),
+          ),
+          const Gap(8),
+          SizedBox(
+            width: 100,
+            child: Select<String>(
+              value: _since,
+              onChanged: (v) {
+                if (v != null && v != _since) {
+                  setState(() => _since = v);
+                  _refresh();
+                }
+              },
+              itemBuilder: (context, value) {
+                final label = _periods
+                    .firstWhere((e) => e.$2 == value,
+                        orElse: () => ('日', 'daily'))
+                    .$1;
+                return Text(label);
+              },
+              popup: SelectPopup(
+                items: SelectItemList(
+                  children: _periods
+                      .map((e) => SelectItemButton(
+                            value: e.$2,
+                            child: Text(e.$1),
+                          ))
+                      .toList(),
+                ),
+              ).call,
+            ),
+          ),
+          const Gap(8),
+          OutlineButton(
+            onPressed: _loading ? null : _refresh,
+            child: const Icon(Icons.refresh, size: 16),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title + filters
-          Row(
-            children: [
-              const Text('GitHub 趋势').h2(),
-              const Spacer(),
-              SizedBox(
-                width: 160,
-                child: Select<String>(
-                  value: _language,
-                  onChanged: (v) {
-                    if (v != null && v != _language) {
-                      setState(() => _language = v);
-                      _refresh();
-                    }
-                  },
-                  itemBuilder: (context, value) {
-                    final label = _languages
-                        .firstWhere((e) => e.$2 == value,
-                            orElse: () => ('全部', ''))
-                        .$1;
-                    return Text(label);
-                  },
-                  popup: SelectPopup(
-                    items: SelectItemList(
-                      children: _languages
-                          .map((e) => SelectItemButton(
-                                value: e.$2,
-                                child: Text(e.$1),
-                              ))
-                          .toList(),
-                    ),
-                  ).call,
-                ),
-              ),
-              const Gap(8),
-              SizedBox(
-                width: 100,
-                child: Select<String>(
-                  value: _since,
-                  onChanged: (v) {
-                    if (v != null && v != _since) {
-                      setState(() => _since = v);
-                      _refresh();
-                    }
-                  },
-                  itemBuilder: (context, value) {
-                    final label = _periods
-                        .firstWhere((e) => e.$2 == value,
-                            orElse: () => ('日', 'daily'))
-                        .$1;
-                    return Text(label);
-                  },
-                  popup: SelectPopup(
-                    items: SelectItemList(
-                      children: _periods
-                          .map((e) => SelectItemButton(
-                                value: e.$2,
-                                child: Text(e.$1),
-                              ))
-                          .toList(),
-                    ),
-                  ).call,
-                ),
-              ),
-              const Gap(8),
-              OutlineButton(
-                onPressed: _loading ? null : _refresh,
-                child: const Icon(Icons.refresh, size: 16),
-              ),
-            ],
-          ),
           const Gap(16),
 
           // Tab switcher

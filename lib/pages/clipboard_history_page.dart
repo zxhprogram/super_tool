@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:shadcn_flutter/shadcn_flutter.dart';
+import '../widgets/page_wrapper.dart';
 
 import '../clipboard/clipboard_service.dart';
 import '../db/clipboard_model.dart';
@@ -88,29 +89,24 @@ class _ClipboardHistoryPageState extends State<ClipboardHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: '剪贴板历史',
+      breadcrumbLabel: '工具',
+      trailing: OutlineButton(
+        onPressed: _clearAll,
+        density: ButtonDensity.compact,
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.delete_outline, size: 16),
+            Gap(4),
+            Text('清空'),
+          ],
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text('剪贴板历史').h2(),
-              const Spacer(),
-              OutlineButton(
-                onPressed: _clearAll,
-                density: ButtonDensity.compact,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.delete_outline, size: 16),
-                    Gap(4),
-                    Text('清空'),
-                  ],
-                ),
-              ),
-            ],
-          ),
           const Gap(12),
           Wrap(
             spacing: 8,

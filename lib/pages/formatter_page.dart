@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:re_editor/re_editor.dart';
+import '../widgets/page_wrapper.dart';
 import 'package:re_highlight/languages/json.dart';
 import 'package:re_highlight/languages/yaml.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
@@ -113,48 +114,33 @@ class _FormatterPageState extends State<FormatterPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: '配置格式化',
+      subtitle: '粘贴 JSON 或 YAML 内容，一键格式化提升可读性',
+      breadcrumbLabel: '工具',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Toggle(
+            value: _formatType == FormatType.json,
+            onChanged: (v) {
+              if (v) setState(() => _formatType = FormatType.json);
+            },
+            child: const Text('JSON'),
+          ),
+          const Gap(4),
+          Toggle(
+            value: _formatType == FormatType.yaml,
+            onChanged: (v) {
+              if (v) setState(() => _formatType = FormatType.yaml);
+            },
+            child: const Text('YAML'),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('配置格式化').h2(),
-                    const Gap(4),
-                    Text(
-                      '粘贴 JSON 或 YAML 内容，一键格式化提升可读性',
-                      style: TextStyle(
-                          color: theme.colorScheme.mutedForeground),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  Toggle(
-                    value: _formatType == FormatType.json,
-                    onChanged: (v) {
-                      if (v) setState(() => _formatType = FormatType.json);
-                    },
-                    child: const Text('JSON'),
-                  ),
-                  const Gap(4),
-                  Toggle(
-                    value: _formatType == FormatType.yaml,
-                    onChanged: (v) {
-                      if (v) setState(() => _formatType = FormatType.yaml);
-                    },
-                    child: const Text('YAML'),
-                  ),
-                ],
-              ),
-            ],
-          ),
           const Gap(16),
           Row(
             children: [

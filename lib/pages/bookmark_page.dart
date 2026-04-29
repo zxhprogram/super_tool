@@ -3,6 +3,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_sortable_wrap/flutter_sortable_wrap.dart';
 import '../db/database_helper.dart';
+import '../widgets/page_wrapper.dart';
 import '../db/bookmark_model.dart';
 import 'bookmark_dialogs.dart';
 
@@ -133,8 +134,9 @@ class _BookmarkPageState extends State<BookmarkPage> {
     final dateStr =
         '${_now.year}-${_now.month.toString().padLeft(2, '0')}-${_now.day.toString().padLeft(2, '0')}  星期${_weekdays[_now.weekday - 1]}';
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: '书签管理',
+      breadcrumbLabel: '工具',
       child: Column(
         children: [
           // Time display

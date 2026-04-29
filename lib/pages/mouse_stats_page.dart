@@ -4,6 +4,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../db/database_helper.dart';
 import '../db/mouse_model.dart';
 import '../ffi/mouse_listener_service.dart';
+import '../widgets/page_wrapper.dart';
 
 class MouseStatsPage extends StatefulWidget {
   const MouseStatsPage({super.key});
@@ -105,23 +106,13 @@ class _MouseStatsPageState extends State<MouseStatsPage> {
     final dayTotal =
         _chartHistory.fold<int>(0, (sum, s) => sum + s.clickCount);
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: '鼠标点击统计',
+      subtitle: '全局鼠标点击事件监听，应用启动即开始统计',
+      breadcrumbLabel: '统计',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text('鼠标点击统计').h2(),
-              const Spacer(),
-            ],
-          ),
-          const Gap(8),
-          Text(
-            '全局鼠标点击事件监听，应用启动即开始统计',
-            style: TextStyle(color: theme.colorScheme.mutedForeground),
-          ),
-          const Gap(24),
           Row(
             children: [
               _StatChip(
@@ -213,7 +204,9 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(

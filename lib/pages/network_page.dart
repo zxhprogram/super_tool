@@ -4,6 +4,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../db/database_helper.dart';
 import '../db/network_model.dart';
 import '../ffi/network_service.dart';
+import '../widgets/page_wrapper.dart';
 
 class NetworkPage extends StatefulWidget {
   const NetworkPage({super.key});
@@ -128,18 +129,13 @@ class _NetworkPageState extends State<NetworkPage> {
 
     final isNextDisabled = _isToday;
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: '网络监控',
+      subtitle: '实时网速 · 流量统计 · 趋势图表',
+      breadcrumbLabel: '监控',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('网络监控').h2(),
-          const Gap(8),
-          Text(
-            '实时网速 · 流量统计 · 趋势图表',
-            style: TextStyle(color: theme.colorScheme.mutedForeground),
-          ),
-          const Gap(24),
           Row(
             children: [
               Expanded(
@@ -287,7 +283,9 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(

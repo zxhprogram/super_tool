@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
+import '../widgets/page_wrapper.dart';
 
 import '../app_usage/app_usage_service.dart';
 import '../db/app_usage_model.dart';
@@ -137,18 +138,13 @@ class _AppUsagePageState extends State<AppUsagePage> {
     final maxSeconds =
         _summaries.isEmpty ? 0 : _summaries.first.totalSeconds;
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
+    return PageWrapper(
+      title: '应用使用统计',
+      subtitle: '追踪前台应用使用时长，按天查看使用分布',
+      breadcrumbLabel: '统计',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('应用使用统计').h2(),
-          const Gap(8),
-          Text(
-            '追踪前台应用使用时长，按天查看使用分布',
-            style: TextStyle(color: theme.colorScheme.mutedForeground),
-          ),
-          const Gap(20),
           Row(
             children: [
               OutlineButton(
@@ -273,7 +269,9 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(

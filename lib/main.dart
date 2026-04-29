@@ -84,7 +84,7 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
       title: 'Super Tool',
       theme: ThemeData(
         colorScheme: ColorSchemes.darkZinc,
-        radius: 0.5,
+        radius: 0.75,
         typography: .geist(sans: .new(fontFamily: 'Microsoft YaHei')),
       ),
       routerConfig: router,

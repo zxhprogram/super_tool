@@ -5,6 +5,7 @@ import '../db/database_helper.dart';
 import '../ffi/key_listener_service.dart';
 import '../ffi/mouse_listener_service.dart';
 import '../ffi/network_service.dart';
+import '../widgets/page_wrapper.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -66,25 +67,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('应用设置').h2(),
-          const Gap(8),
-          Text(
-            '控制应用启动时自动开启的功能，更改后立即生效',
-            style: TextStyle(color: theme.colorScheme.mutedForeground),
-          ),
-          const Gap(24),
-          _SettingSwitch(
+    return PageWrapper(
+      title: '应用设置',
+      subtitle: '控制应用启动时自动开启的功能，更改后立即生效',
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SettingSwitch(
             icon: Icons.keyboard,
             title: '键盘监听',
             subtitle: '全局键盘事件监听与统计',
@@ -151,6 +145,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -173,7 +168,9 @@ class _SettingSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(

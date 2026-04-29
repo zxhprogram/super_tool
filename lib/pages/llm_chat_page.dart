@@ -6,6 +6,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../db/database_helper.dart';
 import '../db/llm_model.dart';
 import '../services/llm_service.dart';
+import '../widgets/page_wrapper.dart';
 
 class LlmChatPage extends StatefulWidget {
   const LlmChatPage({super.key});
@@ -244,7 +245,11 @@ class _LlmChatPageState extends State<LlmChatPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
+    return PageWrapper(
+      title: 'AI 对话',
+      breadcrumbLabel: '工具',
+      padContent: false,
+      child: Row(
       children: [
         SizedBox(
           width: 220,
@@ -347,6 +352,7 @@ class _LlmChatPageState extends State<LlmChatPage> {
           child: _configs.isEmpty ? _buildNoConfig() : _buildChat(theme),
         ),
       ],
+    ),
     );
   }
 

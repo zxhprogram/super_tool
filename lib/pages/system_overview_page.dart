@@ -4,6 +4,7 @@ import '../db/database_helper.dart';
 import '../ffi/network_service.dart';
 import '../ffi/system_bindings.dart';
 import '../models/system_stats_model.dart';
+import '../widgets/page_wrapper.dart';
 
 class SystemOverviewPage extends StatefulWidget {
   const SystemOverviewPage({super.key});
@@ -80,27 +81,17 @@ class _SystemOverviewPageState extends State<SystemOverviewPage> {
     final theme = Theme.of(context);
     final stats = _stats;
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('系统总览').h2(),
-              const Spacer(),
-              OutlineButton(
-                onPressed: () {
-                  _refresh();
-                  _loadHistoryNet();
-                },
-                child: const Icon(Icons.refresh, size: 16),
-              ),
-            ],
-          ),
-          const Gap(16),
-          Expanded(
-            child: stats == null
+    return PageWrapper(
+      title: '系统总览',
+      breadcrumbLabel: '监控',
+      trailing: OutlineButton(
+        onPressed: () {
+          _refresh();
+          _loadHistoryNet();
+        },
+        child: const Icon(Icons.refresh, size: 16),
+      ),
+      child: stats == null
                 ? const Center(child: CircularProgressIndicator())
                 : SingleChildScrollView(
                     child: Column(
@@ -192,9 +183,6 @@ class _SystemOverviewPageState extends State<SystemOverviewPage> {
                       ],
                     ),
                   ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -211,7 +199,9 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -253,7 +243,9 @@ class _GaugeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = percent.clamp(0.0, 100.0);
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -299,7 +291,9 @@ class _MemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = percent.clamp(0.0, 100.0);
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -347,7 +341,9 @@ class _HistoryNetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -431,7 +427,9 @@ class _DiskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -492,7 +490,9 @@ class _NetIfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -560,7 +560,9 @@ class _EnvVarCardState extends State<_EnvVarCard> {
   @override
   Widget build(BuildContext context) {
     final visible = _expanded ? widget.vars : widget.vars.take(8).toList();
-    return Card(
+    return SurfaceCard(
+      surfaceBlur: 6,
+      surfaceOpacity: 0.5,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
