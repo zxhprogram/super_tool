@@ -30,22 +30,40 @@ void main() async {
       await windowManager.show();
     });
 
-    networkService.start();
-    sleep(.new(seconds: 1));
-    logInfo('networkService started');
-    clipboardService.start();
-    sleep(.new(seconds: 1));
-    logInfo('clipboardService started');
-    appUsageService.start();
-    sleep(.new(seconds: 1));
-    logInfo('appUsageService started');
-    mouseListenerService.start();
-    sleep(.new(seconds: 1));
-    logInfo('mouseListenerService started');
+    final db = DatabaseHelper();
 
-    final enabled = await DatabaseHelper().getSetting('key_listener_enabled');
-    if (enabled == 'true') {
+    final networkEnabled = (await db.getSetting('network_enabled')) != 'false';
+    if (networkEnabled) {
+      networkService.start();
+      sleep(.new(seconds: 1));
+      logInfo('networkService started');
+    }
+
+    final clipboardEnabled = (await db.getSetting('clipboard_enabled')) != 'false';
+    if (clipboardEnabled) {
+      clipboardService.start();
+      sleep(.new(seconds: 1));
+      logInfo('clipboardService started');
+    }
+
+    final appUsageEnabled = (await db.getSetting('app_usage_enabled')) != 'false';
+    if (appUsageEnabled) {
+      appUsageService.start();
+      sleep(.new(seconds: 1));
+      logInfo('appUsageService started');
+    }
+
+    final mouseEnabled = (await db.getSetting('mouse_listener_enabled')) != 'false';
+    if (mouseEnabled) {
+      mouseListenerService.start();
+      sleep(.new(seconds: 1));
+      logInfo('mouseListenerService started');
+    }
+
+    final keyEnabled = (await db.getSetting('key_listener_enabled')) == 'true';
+    if (keyEnabled) {
       keyListenerService.start();
+      sleep(.new(seconds: 1));
       logInfo('keyListenerService started');
     }
 

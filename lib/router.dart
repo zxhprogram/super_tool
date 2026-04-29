@@ -10,6 +10,7 @@ import 'pages/clipboard_history_page.dart';
 import 'pages/app_usage_page.dart';
 import 'pages/llm_chat_page.dart';
 import 'pages/mouse_stats_page.dart';
+import 'pages/settings_page.dart';
 import 'pages/shell_page.dart';
 
 final router = GoRouter(
@@ -29,6 +30,7 @@ final router = GoRouter(
         GoRoute(path: '/app-usage', builder: (context, state) => const AppUsagePage()),
         GoRoute(path: '/llm-chat', builder: (context, state) => const LlmChatPage()),
         GoRoute(path: '/mouse-stats', builder: (context, state) => const MouseStatsPage()),
+        GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
       ],
     ),
   ],

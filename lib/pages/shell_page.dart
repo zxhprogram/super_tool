@@ -93,6 +93,14 @@ class ShellPage extends StatelessWidget {
               child: const Icon(Icons.mouse),
             ),
           ],
+          footer: [
+            const NavigationDivider(),
+            NavigationItem(
+              key: const ValueKey('/settings'),
+              label: const Text('应用设置'),
+              child: const Icon(Icons.settings),
+            ),
+          ],
         ),
         Expanded(child: child),
       ],
