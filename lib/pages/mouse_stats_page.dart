@@ -15,7 +15,15 @@ class MouseStatsPage extends StatefulWidget {
 class _MouseStatsPageState extends State<MouseStatsPage> {
   StreamSubscription<String>? _sub;
   List<MouseMinuteStat> _chartHistory = [];
-  int? _lastMinuteTs;
+  DateTime _selectedDate = DateTime.now();
+  int _lastMinuteTs = 0;
+
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
+  }
 
   @override
   void initState() {
@@ -28,17 +36,57 @@ class _MouseStatsPageState extends State<MouseStatsPage> {
   }
 
   Future<void> _loadChart() async {
-    final rows = await DatabaseHelper().getRecentMouseStats(limit: 30);
-    setState(() => _chartHistory = rows.reversed.toList());
+    final rows = await DatabaseHelper().getMouseStatsByDate(_selectedDate);
+    setState(() => _chartHistory = rows);
   }
 
   void _maybeRefreshChart() {
+    if (!_isToday) return;
     final nowMinuteTs =
         (DateTime.now().millisecondsSinceEpoch ~/ 1000) ~/ 60 * 60;
     if (nowMinuteTs != _lastMinuteTs) {
       _lastMinuteTs = nowMinuteTs;
       _loadChart();
     }
+  }
+
+  void _goToPrevDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+      _chartHistory = [];
+    });
+    _loadChart();
+  }
+
+  void _goToNextDay() {
+    if (_isToday) return;
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+      _chartHistory = [];
+    });
+    _loadChart();
+  }
+
+  void _goToToday() {
+    setState(() {
+      _selectedDate = DateTime.now();
+      _chartHistory = [];
+    });
+    _loadChart();
+  }
+
+  String _formatDate(DateTime d) {
+    final now = DateTime.now();
+    if (d.year == now.year && d.month == now.month && d.day == now.day) {
+      return '今天';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (d.year == yesterday.year &&
+        d.month == yesterday.month &&
+        d.day == yesterday.day) {
+      return '昨天';
+    }
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -54,6 +102,8 @@ class _MouseStatsPageState extends State<MouseStatsPage> {
     final left = mouseListenerService.leftCount;
     final right = mouseListenerService.rightCount;
     final middle = mouseListenerService.middleCount;
+    final dayTotal =
+        _chartHistory.fold<int>(0, (sum, s) => sum + s.clickCount);
 
     return Padding(
       padding: const EdgeInsets.all(32),
@@ -100,10 +150,48 @@ class _MouseStatsPageState extends State<MouseStatsPage> {
             ],
           ),
           const Gap(24),
-          const Text('最近 30 分钟点击量').semiBold(),
+          Row(
+            children: [
+              OutlineButton(
+                onPressed: _goToPrevDay,
+                density: ButtonDensity.compact,
+                child: const Icon(Icons.chevron_left, size: 18),
+              ),
+              const Gap(8),
+              Text(
+                _formatDate(_selectedDate),
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const Gap(8),
+              OutlineButton(
+                onPressed: _isToday ? null : _goToNextDay,
+                density: ButtonDensity.compact,
+                child: const Icon(Icons.chevron_right, size: 18),
+              ),
+              if (!_isToday) ...[
+                const Gap(8),
+                OutlineButton(
+                  onPressed: _goToToday,
+                  density: ButtonDensity.compact,
+                  child: const Text('今天'),
+                ),
+              ],
+              const Spacer(),
+              _StatChip(
+                label: '当日合计',
+                value: '$dayTotal 次',
+                color: theme.colorScheme.primary,
+              ),
+            ],
+          ),
+          const Gap(12),
+          Text(
+            '点击趋势（${_formatDate(_selectedDate)}）',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ).muted(),
           const Gap(8),
-          SizedBox(
-            height: 200,
+          Expanded(
             child: _MouseChart(data: _chartHistory),
           ),
         ],
@@ -179,12 +267,15 @@ class _MouseChart extends StatelessWidget {
           BarChartRodData(
             toY: e.value.clickCount.toDouble(),
             color: theme.colorScheme.primary,
-            width: 10,
+            width: data.length > 30 ? 6 : 10,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
           ),
         ],
       );
     }).toList();
+
+    final interval =
+        data.length > 12 ? (data.length / 6).ceilToDouble() : 1.0;
 
     return BarChart(
       BarChartData(
@@ -203,8 +294,26 @@ class _MouseChart extends StatelessWidget {
               ),
             ),
           ),
-          bottomTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 20,
+              interval: interval,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= data.length) return const SizedBox();
+                final ts = data[idx].minuteTs;
+                final dt = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+                return Text(
+                  '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: theme.colorScheme.mutedForeground,
+                  ),
+                );
+              },
+            ),
+          ),
           topTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
@@ -221,14 +330,19 @@ class _MouseChart extends StatelessWidget {
         borderData: FlBorderData(show: false),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, groupIndex, rod, rodIndex) =>
-                BarTooltipItem(
-              '${rod.toY.toInt()} 次',
-              TextStyle(
-                color: theme.colorScheme.primary,
-                fontSize: 12,
-              ),
-            ),
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              final ts = data[group.x].minuteTs;
+              final dt = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+              final time =
+                  '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+              return BarTooltipItem(
+                '$time\n${rod.toY.toInt()} 次',
+                TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontSize: 12,
+                ),
+              );
+            },
           ),
         ),
       ),

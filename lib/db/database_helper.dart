@@ -623,4 +623,19 @@ class DatabaseHelper {
     );
     return rows.map(MouseMinuteStat.fromMap).toList();
   }
+
+  Future<List<MouseMinuteStat>> getMouseStatsByDate(DateTime date) async {
+    final startTs =
+        DateTime(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+            1000;
+    final endTs = startTs + 86400;
+    final d = await db;
+    final rows = await d.query(
+      'mouse_minute_stats',
+      where: 'minute_ts >= ? AND minute_ts < ?',
+      whereArgs: [startTs, endTs],
+      orderBy: 'minute_ts ASC',
+    );
+    return rows.map(MouseMinuteStat.fromMap).toList();
+  }
 }
