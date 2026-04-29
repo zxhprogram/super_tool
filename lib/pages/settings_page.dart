@@ -55,7 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
     VoidCallback? onStart,
     VoidCallback? onStop,
   ) async {
-    setter(value);
+    setState(() => setter(value));
     await DatabaseHelper().setSetting(key, value ? 'true' : 'false');
     if (value) {
       onStart?.call();
