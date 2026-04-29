@@ -534,6 +534,43 @@ class DatabaseHelper {
     return rows.map(AppUsageMinute.fromMap).toList();
   }
 
+  Future<List<AppUsageSummary>> getAppUsageSummaryByDate(DateTime date) async {
+    final startTs =
+        DateTime(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+            1000;
+    final endTs = startTs + 86400;
+    final d = await db;
+    final rows = await d.rawQuery(
+      '''
+      SELECT process_name, SUM(seconds) as total_seconds
+      FROM app_usage_minutes
+      WHERE minute_ts >= ? AND minute_ts < ?
+      GROUP BY process_name
+      ORDER BY total_seconds DESC
+    ''',
+      [startTs, endTs],
+    );
+    return rows.map(AppUsageSummary.fromMap).toList();
+  }
+
+  Future<List<AppUsageMinute>> getAppUsageByProcessAndDate({
+    required String processName,
+    required DateTime date,
+  }) async {
+    final startTs =
+        DateTime(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+            1000;
+    final endTs = startTs + 86400;
+    final d = await db;
+    final rows = await d.query(
+      'app_usage_minutes',
+      where: 'process_name = ? AND minute_ts >= ? AND minute_ts < ?',
+      whereArgs: [processName, startTs, endTs],
+      orderBy: 'minute_ts ASC',
+    );
+    return rows.map(AppUsageMinute.fromMap).toList();
+  }
+
   // --- LLM configs ---
 
   Future<List<LlmConfig>> getLlmConfigs() async {
