@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'pages/splash_page.dart';
 import 'pages/welcome_page.dart';
 import 'pages/key_listener_page.dart';
 import 'pages/formatter_page.dart';
@@ -14,8 +15,9 @@ import 'pages/settings_page.dart';
 import 'pages/shell_page.dart';
 
 final router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
     ShellRoute(
       builder: (context, state, child) => ShellPage(child: child),
       routes: [
