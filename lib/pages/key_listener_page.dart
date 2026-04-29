@@ -16,9 +16,9 @@ class _KeyDef {
   const _KeyDef(this.label, this.dbName, [this.units = 1.0]);
 }
 
-const double _kUnit = 40.0;
 const double _kHeight = 34.0;
 const double _kMargin = 2.0;
+const double _kTotalUnits = 15.0;
 
 const _kRow0 = <_KeyDef>[
   _KeyDef('Esc', 'Escape', 1.5),
@@ -303,10 +303,7 @@ class _KeyListenerPageState extends State<KeyListenerPage> {
           const Gap(8),
           SizedBox(
             height: (_kHeight + _kMargin * 2) * 6 + 8,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: _KeyboardHeatmap(counts: counts, maxCount: maxCount),
-            ),
+            child: _KeyboardHeatmap(counts: counts, maxCount: maxCount),
           ),
           const Gap(16),
           // Bottom: Top 10 + Trend chart
@@ -389,25 +386,35 @@ class _KeyboardHeatmap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = [_kRow0, _kRow1, _kRow2, _kRow3, _kRow4, _kRow5];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children:
-          rows.map((row) => _buildRow(context, row)).toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final unitWidth = constraints.maxWidth / _kTotalUnits;
+        final rows = [_kRow0, _kRow1, _kRow2, _kRow3, _kRow4, _kRow5];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: rows
+              .map((row) => _buildRow(context, row, unitWidth))
+              .toList(),
+        );
+      },
     );
   }
 
-  Widget _buildRow(BuildContext context, List<_KeyDef> keys) {
+  Widget _buildRow(
+      BuildContext context, List<_KeyDef> keys, double unitWidth) {
+    final rowUnits = keys.fold(0.0, (sum, k) => sum + k.units);
+    final trailing = _kTotalUnits - rowUnits;
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: keys
-          .map((k) => _HeatKey(
-                def: k,
-                count: counts[k.dbName] ?? 0,
-                maxCount: maxCount,
-              ))
-          .toList(),
+      children: [
+        ...keys.map((k) => _HeatKey(
+              def: k,
+              count: counts[k.dbName] ?? 0,
+              maxCount: maxCount,
+              unitWidth: unitWidth,
+            )),
+        if (trailing > 0.001) SizedBox(width: trailing * unitWidth),
+      ],
     );
   }
 }
@@ -420,9 +427,10 @@ class _HeatKey extends StatelessWidget {
   final _KeyDef def;
   final int count;
   final int maxCount;
+  final double unitWidth;
 
   const _HeatKey(
-      {required this.def, required this.count, required this.maxCount});
+      {required this.def, required this.count, required this.maxCount, required this.unitWidth});
 
   String _formatCount(int c) {
     if (c >= 1000) return '${(c / 1000).toStringAsFixed(1)}k';
@@ -444,7 +452,7 @@ class _HeatKey extends StatelessWidget {
         ? hotColor.withValues(alpha: 0.6)
         : Colors.white.withValues(alpha: 0.12);
 
-    final keyW = def.units * _kUnit - _kMargin * 2;
+    final keyW = def.units * unitWidth - _kMargin * 2;
 
     return Container(
       width: keyW,
