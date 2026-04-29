@@ -47,6 +47,8 @@ dependencies:
   crypto: ^3.0.3
   path: ^1.9.0
   flutter_markdown_plus: ^1.0.7
+  tray_manager: ^0.5.2
+  window_manager: ^0.5.1
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +75,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/dylib/super_tool_plugin.dll
+    - assets/app_icon.ico
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
